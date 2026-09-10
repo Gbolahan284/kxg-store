@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model Product {
@@ -18,6 +16,10 @@ model Product {
   hoverImage  String?  // HOVER IMAGE URL (OPTIONAL)
   isFeatured  Boolean  @default(true)
   inStock     Boolean  @default(true)
+
+  // JSON field to track size-level stock
+  sizes       Json?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -4,6 +4,14 @@ import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
+async function checkAuth() {
+  const cookieStore = await cookies();
+  const auth = cookieStore.get('kxg_admin_auth');
+  if (auth?.value !== 'authenticated') {
+    throw new Error('Unauthorized access.');
+  }
+}
+
 export async function verifyAdminPasscode(passcode: string) {
   const envKey = process.env.ADMIN_SECRET_KEY || '314200Bolu';
 
@@ -22,19 +30,30 @@ export async function verifyAdminPasscode(passcode: string) {
 }
 
 export async function createProduct(formData: FormData) {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-
-  if (auth?.value !== 'authenticated') {
-    throw new Error('Unauthorized access. Please log in.');
-  }
+  await checkAuth();
 
   const name = formData.get('name') as string;
   const description = formData.get('description') as string;
   const price = parseFloat(formData.get('price') as string) || 0;
   const category = formData.get('category') as string;
   const image = formData.get('image') as string;
-  const hoverImage = formData.get('hoverImage') as string; // Extracted hover image URL
+  const hoverImage = formData.get('hoverImage') as string;
+
+  // Extract and parse size inventory JSON safely
+  const rawSizes = formData.get('sizes') as string;
+  let parsedSizes = [];
+  try {
+    const parsed = rawSizes ? JSON.parse(rawSizes) : [];
+    parsedSizes = Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    parsedSizes = [];
+  }
+
+  // Calculate total stock safely from sizes array
+  const totalStock = parsedSizes.reduce(
+    (sum: number, item: { stock?: number }) => sum + (Number(item?.stock) || 0),
+    0
+  );
 
   if (!name || !price) {
     throw new Error('Name and price are required.');
@@ -47,22 +66,18 @@ export async function createProduct(formData: FormData) {
       price,
       category: category || 'Drop 01',
       image: image || '',
-      hoverImage: hoverImage || null, // Saved to database
-      inStock: true,
+      hoverImage: hoverImage || null,
+      sizes: parsedSizes,
+      inStock: totalStock > 0,
     },
   });
 
-  revalidatePath('/', 'page');
-  revalidatePath('/admin', 'page');
+  revalidatePath('/');
+  revalidatePath('/admin');
 }
 
 export async function getProducts() {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-
-  if (auth?.value !== 'authenticated') {
-    throw new Error('Unauthorized access.');
-  }
+  await checkAuth();
 
   return await db.product.findMany({
     orderBy: { createdAt: 'desc' },
@@ -70,47 +85,31 @@ export async function getProducts() {
 }
 
 export async function toggleStock(productId: string, currentStatus: boolean) {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-
-  if (auth?.value !== 'authenticated') {
-    throw new Error('Unauthorized access.');
-  }
+  await checkAuth();
 
   await db.product.update({
     where: { id: productId },
     data: { inStock: !currentStatus },
   });
 
-  // Revalidate both the root homepage and dynamic product detail pages
-  revalidatePath('/', 'page');
-  revalidatePath(`/product/${productId}`, 'page');
-  revalidatePath('/admin', 'page');
+  revalidatePath('/');
+  revalidatePath(`/product/${productId}`);
+  revalidatePath('/admin');
 }
 
 export async function deleteProduct(productId: string) {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-
-  if (auth?.value !== 'authenticated') {
-    throw new Error('Unauthorized access.');
-  }
+  await checkAuth();
 
   await db.product.delete({
     where: { id: productId },
   });
 
-  revalidatePath('/', 'page');
-  revalidatePath('/admin', 'page');
+  revalidatePath('/');
+  revalidatePath('/admin');
 }
 
 export async function getSubscribers() {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-
-  if (auth?.value !== 'authenticated') {
-    throw new Error('Unauthorized access.');
-  }
+  await checkAuth();
 
   return await db.newsletterSubscriber.findMany({
     orderBy: { createdAt: 'desc' },

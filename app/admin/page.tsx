@@ -26,6 +26,7 @@ interface Product {
   hoverImage?: string | null;
   isFeatured?: boolean;
   inStock: boolean;
+  sizes?: any;
   createdAt: Date | string;
 }
 
@@ -46,6 +47,20 @@ export default function AdminPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // --- SIZE INVENTORY STATE ---
+  const [sizes, setSizes] = useState([
+    { size: 'S', stock: 10 },
+    { size: 'M', stock: 20 },
+    { size: 'L', stock: 15 },
+    { size: 'XL', stock: 5 },
+  ]);
+
+  const handleStockChange = (index: number, newStock: number) => {
+    const updated = [...sizes];
+    updated[index].stock = Math.max(0, newStock);
+    setSizes(updated);
+  };
+
   async function loadProductsData() {
     setLoadingProducts(true);
     try {
@@ -65,7 +80,6 @@ export default function AdminPage() {
       const res = await fetch('/api/newsletter');
       const data = await res.json();
       
-      // Handle array or object payloads safely ({ subscribers: [...] } vs [...])
       const list = Array.isArray(data) ? data : (data.subscribers || data.data || []);
 
       const formatted: Subscriber[] = list.map((sub: any, index: number) => ({
@@ -85,7 +99,6 @@ export default function AdminPage() {
     }
   }
 
-  // Auto-fetch data when switching tabs while authenticated
   useEffect(() => {
     if (isAuthenticated) {
       if (activeTab === 'inventory') {
@@ -117,11 +130,21 @@ export default function AdminPage() {
     setError(null);
 
     const formData = new FormData(event.currentTarget);
+    
+    // Append JSON serialized sizes to FormData
+    formData.append('sizes', JSON.stringify(sizes));
 
     try {
       await createProduct(formData);
       setSuccess(true);
       (event.target as HTMLFormElement).reset();
+      // Reset default size stock quantities
+      setSizes([
+        { size: 'S', stock: 10 },
+        { size: 'M', stock: 20 },
+        { size: 'L', stock: 15 },
+        { size: 'XL', stock: 5 },
+      ]);
       loadProductsData();
     } catch (err: any) {
       setError(err.message || 'Failed to add product.');
@@ -343,6 +366,27 @@ export default function AdminPage() {
                   placeholder="https://..."
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
+              </div>
+            </div>
+
+            {/* --- SIZE INVENTORY FIELD --- */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">
+                Size Stock Quantities
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {sizes.map((item, idx) => (
+                  <div key={item.size} className="flex items-center gap-2 bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                    <span className="text-white font-mono font-bold w-6">{item.size}:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={item.stock}
+                      onChange={(e) => handleStockChange(idx, parseInt(e.target.value) || 0)}
+                      className="bg-neutral-900 text-white px-3 py-1 rounded-lg border border-neutral-700 w-full text-sm font-mono focus:outline-none focus:border-neutral-500"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 

@@ -39,6 +39,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.hoverImage || product.image,
   ].filter(Boolean) as string[];
 
+  // Safely parse JSON sizes array with explicit type assertion
+  const rawSizes = (product as any).sizes;
+  const parsedSizes = Array.isArray(rawSizes)
+    ? rawSizes
+    : typeof rawSizes === 'string'
+    ? JSON.parse(rawSizes)
+    : [];
+
   return (
     <div className="min-h-screen bg-black text-white font-sans">
       {/* Top Banner Announcement */}
@@ -100,7 +108,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 name: product.name,
                 price: product.price,
                 image: product.image || undefined,
-              }} 
+                sizes: parsedSizes,
+              } as any} 
             />
 
             {/* Description */}
