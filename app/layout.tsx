@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
+// Import Vercel Analytics
+import { Analytics } from '@vercel/analytics/next';
+
 // Import Cart system
 import { CartProvider } from '@/context/CartContext';
 import CartDrawer from '@/components/CartDrawer';
@@ -33,6 +36,7 @@ export default function RootLayout({
           <CartDrawer />
           <Footer />
         </CartProvider>
+        <Analytics />
       </body>
     </html>
   );
