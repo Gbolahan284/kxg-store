@@ -47,3 +47,4 @@ next-env.d.ts
 
 # prisma generated artifacts
 /app/generated/prisma
+.env*

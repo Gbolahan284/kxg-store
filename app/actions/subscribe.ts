@@ -10,9 +10,10 @@ export async function subscribeToNewsletter(email: string) {
   const cleanEmail = email.toLowerCase().trim();
 
   try {
-    const subscriber = await db.subscriber.create({
-      data: { email: cleanEmail },
-    });
+    const subscriber = await prisma.newsletterSubscriber.create({
+  data: {
+    email: email,},
+});
     return { success: true, subscriber };
   } catch (error: any) {
     // P2002 is Prisma's code for unique constraint failure (email already exists)
