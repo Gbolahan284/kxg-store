@@ -1,10 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { openCart, cart } = useCart();
+  
+  // Check if the current route is an admin page
+  const isAdminPage = pathname?.startsWith('/admin');
   
   // Calculate total number of items in cart
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -26,26 +31,21 @@ export default function Navbar() {
 
         {/* Navigation Actions */}
         <div className="flex items-center gap-6">
-          <Link 
-            href="/admin" 
-            className="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-white transition-colors"
-          >
-            Admin
-          </Link>
-
-          {/* Cart Button */}
-          <button
-            onClick={openCart}
-            className="relative bg-white text-black font-black text-xs uppercase tracking-widest px-5 py-2.5 rounded-full hover:bg-neutral-200 transition-all flex items-center gap-2"
-            aria-label="Open Cart"
-          >
-            <span>Cart</span>
-            {itemCount > 0 && (
-              <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                {itemCount}
-              </span>
-            )}
-          </button>
+          {/* Cart Button - Hidden on Admin Pages */}
+          {!isAdminPage && (
+            <button
+              onClick={openCart}
+              className="relative bg-white text-black font-black text-xs uppercase tracking-widest px-5 py-2.5 rounded-full hover:bg-neutral-200 transition-all flex items-center gap-2"
+              aria-label="Open Cart"
+            >
+              <span>Cart</span>
+              {itemCount > 0 && (
+                <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </header>
