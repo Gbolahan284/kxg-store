@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@/lib/db';
+import { db } from '../../lib/db';
 
 export async function subscribeToNewsletter(email: string) {
   if (!email || !email.includes('@')) {
@@ -10,13 +10,13 @@ export async function subscribeToNewsletter(email: string) {
   const cleanEmail = email.toLowerCase().trim();
 
   try {
-    const subscriber = await prisma.newsletterSubscriber.create({
-  data: {
-    email: email,},
-});
+    const subscriber = await db.newsletterSubscriber.create({
+      data: {
+        email: cleanEmail,
+      },
+    });
     return { success: true, subscriber };
   } catch (error: any) {
-    // P2002 is Prisma's code for unique constraint failure (email already exists)
     if (error?.code === 'P2002') {
       return { success: true, message: 'You are already subscribed!' };
     }
