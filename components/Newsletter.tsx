@@ -19,14 +19,15 @@ export default function Newsletter() {
         body: JSON.stringify({ email }),
       });
 
+      const data = await res.json();
       if (res.ok) {
-        setMessage('Subscribed!');
+        setMessage(data.message || 'Subscribed!');
         setEmail('');
       } else {
-        setMessage('Something went wrong.');
+        setMessage(data.error || 'Something went wrong.');
       }
-    } catch (err) {
-      setMessage('Failed to send.');
+    } catch {
+      setMessage('Failed to send. Please try again later.');
     } finally {
       setLoading(false);
     }

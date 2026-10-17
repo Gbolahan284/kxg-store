@@ -5,12 +5,34 @@ import React, { useState } from 'react';
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  function handleSubscribe(e: React.FormEvent) {
+  async function handleSubscribe(e: React.FormEvent) {
     e.preventDefault();
-    if (email) {
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Unable to subscribe. Please try again.');
+        return;
+      }
+
       setSubscribed(true);
       setEmail('');
+    } catch {
+      setError('Unable to subscribe. Please try again.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -43,14 +65,19 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
+                disabled={loading}
                 className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 flex-1"
               />
-              <button
-                type="submit"
-                className="bg-white text-black font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-neutral-200 transition-colors"
-              >
-                Subscribe
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-white text-black font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Subscribing...' : 'Subscribe'}
+                </button>
+                {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
+              </div>
             </form>
           )}
         </div>
