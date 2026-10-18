@@ -302,7 +302,7 @@ function CheckoutContent() {
                     onChange={() => setShippingMethod('ISLAND')}
                     className="w-4 h-4 text-blue-600 accent-blue-600"
                   />
-                  <span className="font-semibold text-xs tracking-wider uppercase">ISLAND/OTHER STATES</span>
+                  <span className="font-semibold text-xs tracking-wider uppercase">ISLAND/INTER STATES</span>
                 </div>
                 <span className="font-bold text-sm">₦8,000.00</span>
               </label>
