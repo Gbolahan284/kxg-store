@@ -8,11 +8,11 @@ export default function Hero() {
         {/* Mobile: Use object-contain so all 4 models are fully visible */}
         <source
           media="(max-width: 640px)"
-          srcSet="https://res.cloudinary.com/patkysps/image/upload/v1787616115/DSC_8160_htkhit.jpg"
+          srcSet="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
         />
         {/* Desktop: Full-bleed cover */}
         <img
-          src="https://res.cloudinary.com/patkysps/image/upload/v1787616115/DSC_8160_htkhit.jpg"
+          src="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
           alt="KXG Brand Banner"
           className="w-full h-auto max-h-[85vh] sm:max-h-none sm:h-full object-contain sm:object-cover object-center block"
         />
