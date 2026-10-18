@@ -61,7 +61,7 @@ function CheckoutContent() {
   // Tax & Shipping Calculations
   const taxRate = 0.075; // 7.5% VAT
   const estimatedTax = Math.round(subtotal * taxRate);
-  const shippingCost = shippingMethod === 'ISLAND' ? 5000 : 8000;
+  const shippingCost = shippingMethod === 'ISLAND' ? 8000 : 5000;
   const totalAmount = subtotal + shippingCost + estimatedTax;
 
   const isFormValid = Boolean(
@@ -302,9 +302,9 @@ function CheckoutContent() {
                     onChange={() => setShippingMethod('ISLAND')}
                     className="w-4 h-4 text-blue-600 accent-blue-600"
                   />
-                  <span className="font-semibold text-xs tracking-wider uppercase">ISLAND</span>
+                  <span className="font-semibold text-xs tracking-wider uppercase">ISLAND/OTHER STATES</span>
                 </div>
-                <span className="font-bold text-sm">₦5,000.00</span>
+                <span className="font-bold text-sm">₦8,000.00</span>
               </label>
 
               <label
@@ -322,7 +322,7 @@ function CheckoutContent() {
                   />
                   <span className="font-semibold text-xs tracking-wider uppercase">MAINLAND</span>
                 </div>
-                <span className="font-bold text-sm">₦8,000.00</span>
+                <span className="font-bold text-sm">₦5,000.00</span>
               </label>
             </div>
           </div>
