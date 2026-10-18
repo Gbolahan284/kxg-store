@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 export default function Navbar() {
@@ -35,12 +36,15 @@ export default function Navbar() {
           {!isAdminPage && (
             <button
               onClick={openCart}
-              className="relative bg-white text-black font-black text-xs uppercase tracking-widest px-5 py-2.5 rounded-full hover:bg-neutral-200 transition-all flex items-center gap-2"
+              className="relative bg-white text-black p-2.5 sm:px-4 sm:py-2.5 rounded-full hover:bg-neutral-200 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
               aria-label="Open Cart"
             >
-              <span>Cart</span>
+              {/* Lucide Shopping Bag Icon */}
+              <ShoppingBag className="w-5 h-5 stroke-[2]" />
+
+              {/* Dynamic Item Counter Badge */}
               {itemCount > 0 && (
-                <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-black text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
