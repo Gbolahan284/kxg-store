@@ -16,12 +16,12 @@ export default async function Home() {
     <main className="min-h-screen bg-black">
       <Hero />
 
-      <section id="drops" className="max-w-7xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-2xl font-black tracking-wider uppercase text-white">
+      <section id="drops" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="flex items-center justify-between mb-6 sm:mb-10">
+          <h2 className="text-xl sm:text-2xl font-black tracking-wider uppercase text-white">
             Current Drop
           </h2>
-          <span className="text-xs text-neutral-400 font-mono">
+          <span className="text-[10px] sm:text-xs text-neutral-400 font-mono">
             {products.length} {products.length === 1 ? 'ITEM' : 'ITEMS'} AVAILABLE
           </span>
         </div>
@@ -31,7 +31,8 @@ export default async function Home() {
             <p className="text-neutral-500">No products found in this drop.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          /* Updated grid-cols-2 for Mobile (2 items side-by-side) */
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-8">
             {products.map((product: any) => {
               const productUrl =
                 product.id && product.id.length > 0
@@ -52,36 +53,38 @@ export default async function Home() {
                         />
                         {/* Sold Out Overlay Badge */}
                         {!product.inStock && (
-                          <div className="absolute top-3 right-3 bg-neutral-200/90 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-neutral-200/90 text-black text-[9px] sm:text-[10px] font-black px-2 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-wider shadow-lg">
                             Sold Out
                           </div>
                         )}
                       </div>
                     )}
 
-                    <div className="p-5">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    <div className="p-3 sm:p-5">
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                         {product.category || 'Drop 01'}
                       </span>
-                      <h3 className="text-xl font-bold mt-1 text-white">{product.name}</h3>
-                      <p className="text-neutral-400 text-sm mt-2 line-clamp-2">
+                      <h3 className="text-sm sm:text-xl font-bold mt-0.5 sm:mt-1 text-white line-clamp-1">
+                        {product.name}
+                      </h3>
+                      <p className="text-neutral-400 text-xs sm:text-sm mt-1 sm:mt-2 line-clamp-2">
                         {product.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-5 pt-0 flex items-center justify-between mt-4">
-                    <span className="text-lg font-black text-white">
+                  <div className="p-3 sm:p-5 pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mt-2 sm:mt-4">
+                    <span className="text-sm sm:text-lg font-black text-white">
                       ₦{Number(product.price).toLocaleString()}
                     </span>
 
                     {/* Action Button */}
                     {product.inStock ? (
-                      <span className="px-4 py-2 bg-white text-black text-xs font-bold uppercase tracking-wider rounded-lg group-hover:bg-neutral-200 transition-colors">
+                      <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg group-hover:bg-neutral-200 transition-colors text-center">
                         View Item
                       </span>
                     ) : (
-                      <span className="px-4 py-2 bg-neutral-800 text-neutral-500 text-xs font-bold uppercase tracking-wider rounded-lg cursor-not-allowed">
+                      <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-neutral-800 text-neutral-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-lg cursor-not-allowed text-center">
                         Sold Out
                       </span>
                     )}
@@ -90,9 +93,8 @@ export default async function Home() {
               );
 
               const cardStyles =
-                'border border-neutral-800/80 rounded-2xl overflow-hidden bg-neutral-900/40 transition-all duration-300 flex flex-col justify-between';
+                'border border-neutral-800/80 rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900/40 transition-all duration-300 flex flex-col justify-between';
 
-              // 2. If in stock, render standard Link. If sold out, render unclickable div.
               if (product.inStock) {
                 return (
                   <Link
