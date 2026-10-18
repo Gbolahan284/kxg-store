@@ -2,10 +2,10 @@ import Link from 'next/link';
 
 export default function Hero() {
   return (
-    <div className="relative w-full bg-black border-b border-neutral-800 flex items-center justify-center min-h-[55vh] sm:min-h-screen">
+    <div className="relative w-full bg-black border-b border-neutral-800 flex items-center justify-center h-[80vh] sm:h-screen overflow-hidden">
       {/* Background/Main Image */}
-      <picture className="w-full h-full flex items-center justify-center">
-        {/* Mobile: Use object-contain so all 4 models are fully visible */}
+      <picture className="absolute inset-0 w-full h-full">
+        {/* Mobile: Full-bleed cover */}
         <source
           media="(max-width: 640px)"
           srcSet="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
@@ -14,7 +14,7 @@ export default function Hero() {
         <img
           src="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
           alt="KXG Brand Banner"
-          className="w-full h-auto max-h-[85vh] sm:max-h-none sm:h-full object-contain sm:object-cover object-center block"
+          className="w-full h-full object-cover object-center block"
         />
       </picture>
 
