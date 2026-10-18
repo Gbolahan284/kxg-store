@@ -42,6 +42,7 @@ export default function AdminPage() {
 
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loadingSubscribers, setLoadingSubscribers] = useState(false);
+  const [subscriberError, setSubscriberError] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -76,11 +77,19 @@ export default function AdminPage() {
   // --- SAFELY FETCH AND PARSE SUBSCRIBERS ---
   async function loadSubscribersData() {
     setLoadingSubscribers(true);
+    setSubscriberError(null);
     try {
       const res = await fetch('/api/newsletter');
       const data = await res.json();
-      
+
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed (${res.status}).`);
+      }
+
       const list = Array.isArray(data) ? data : (data.subscribers || data.data || []);
+      if (!Array.isArray(list)) {
+        throw new Error('The server returned an unexpected subscriber response.');
+      }
 
       const formatted: Subscriber[] = list.map((sub: any, index: number) => ({
         id: sub.id || String(index),
@@ -93,7 +102,9 @@ export default function AdminPage() {
       setSubscribers(formatted);
     } catch (err) {
       console.error('Failed to load subscribers:', err);
-      setSubscribers([]);
+      setSubscriberError(
+        err instanceof Error ? err.message : 'Failed to load subscribers. Check the deployment logs.',
+      );
     } finally {
       setLoadingSubscribers(false);
     }
@@ -495,6 +506,10 @@ export default function AdminPage() {
 
           {loadingSubscribers ? (
             <p className="text-sm text-neutral-500 py-8 text-center">Loading subscriber database...</p>
+          ) : subscriberError ? (
+            <p role="alert" className="text-sm text-red-400 py-8 text-center">
+              {subscriberError}
+            </p>
           ) : subscribers.length === 0 ? (
             <p className="text-sm text-neutral-500 py-8 text-center">No subscribers yet.</p>
           ) : (
