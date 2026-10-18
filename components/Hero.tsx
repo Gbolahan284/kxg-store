@@ -2,19 +2,19 @@ import Link from 'next/link';
 
 export default function Hero() {
   return (
-    <div className="relative w-full bg-black border-b border-neutral-800 flex items-center justify-center h-[80vh] sm:h-screen overflow-hidden">
+    <div className="relative w-full bg-black border-b border-neutral-800 flex items-center justify-center h-[60vh] sm:h-screen overflow-hidden">
       {/* Background/Main Image */}
       <picture className="absolute inset-0 w-full h-full">
-        {/* Mobile: Full-bleed cover */}
+        {/* Mobile View: Adjust focal point to focus on models */}
         <source
           media="(max-width: 640px)"
           srcSet="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
         />
-        {/* Desktop: Full-bleed cover */}
+        {/* Desktop View */}
         <img
           src="https://res.cloudinary.com/rl3bynob/image/upload/v1792352721/WhatsApp_Image_2026-10-18_at_8.00.56_PM.jpg"
           alt="KXG Brand Banner"
-          className="w-full h-full object-cover object-center block"
+          className="w-full h-full object-cover object-[center_35%] sm:object-center block"
         />
       </picture>
 
