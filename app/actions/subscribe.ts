@@ -3,7 +3,6 @@
 import { db } from '../../lib/db';
 import { Resend } from 'resend';
 
-// Initialize Resend with your API key
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function subscribeToNewsletter(email: string) {
@@ -14,14 +13,27 @@ export async function subscribeToNewsletter(email: string) {
   const cleanEmail = email.toLowerCase().trim();
 
   try {
-    // 1. Save subscriber into your database via Prisma
+    // 1. Check if the subscriber already exists in your database
+    const existingSubscriber = await db.newsletterSubscriber.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (existingSubscriber) {
+      return { 
+        success: false, 
+        isAlreadySubscribed: true, 
+        message: 'Already a member!' 
+      };
+    }
+
+    // 2. Save subscriber into your database via Prisma
     const subscriber = await db.newsletterSubscriber.create({
       data: {
         email: cleanEmail,
       },
     });
 
-    // 2. Trigger email notification via Resend
+    // 3. Trigger email notification via Resend
     await resend.emails.send({
       from: 'KXG Support <onboarding@resend.dev>', // Or your verified custom domain
       to: ['fitbykxg@gmail.com'], // Receives subscriber alert in your inbox
@@ -41,12 +53,26 @@ export async function subscribeToNewsletter(email: string) {
       `,
     });
 
+    // 4. Optional: Sync directly into Resend Audience/Contacts list
+    if (process.env.RESEND_AUDIENCE_ID) {
+      await resend.contacts.create({
+        email: cleanEmail,
+        unsubscribed: false,
+        audienceId: process.env.RESEND_AUDIENCE_ID,
+      });
+    }
+
     return { success: true, subscriber };
   } catch (error: any) {
-    // Handle duplicate subscriber error in Prisma (P2002)
+    // Backup check for Prisma unique constraint error (P2002)
     if (error?.code === 'P2002') {
-      return { success: true, message: 'You are already subscribed!' };
+      return { 
+        success: false, 
+        isAlreadySubscribed: true, 
+        message: 'Already a member!' 
+      };
     }
+
     console.error('Newsletter Server Action Error:', error);
     return { success: false, error: 'Failed to subscribe. Please try again later.' };
   }
