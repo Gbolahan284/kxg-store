@@ -13,6 +13,9 @@ import CartDrawer from '@/components/CartDrawer';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+// Import 5-Second Timed Popup Modal
+import TimedPopupModal from '@/components/TimedPopupModal';
+
 const inter = Inter({ subsets: ['latin'] });
 
 const LOGO_URL = 'https://res.cloudinary.com/rl3bynob/image/upload/v1792639178/photo_2026-08-04_12-46-34.jpg';
@@ -66,6 +69,8 @@ export default function RootLayout({
           <main className="flex-1">
             {children}
           </main>
+          {/* 5-Second Timed Lead Capture Modal */}
+          <TimedPopupModal />
           <CartDrawer />
           <Footer />
         </CartProvider>
