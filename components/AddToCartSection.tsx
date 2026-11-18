@@ -26,6 +26,17 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
   const displayPrice = product.price > 0 ? product.price : 40000;
 
   const handleAddToCart = () => {
+    // Fire Meta Pixel AddToCart Event
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'AddToCart', {
+        content_name: product.name,
+        content_ids: [product.id || 'hoody'],
+        content_type: 'product',
+        value: displayPrice,
+        currency: 'NGN',
+      });
+    }
+
     addToCart({
       id: product.id || 'hoody',
       name: product.name,
@@ -36,6 +47,17 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
   };
 
   const handleBuyNow = () => {
+    // Fire Meta Pixel InitiateCheckout Event for Buy Now
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'InitiateCheckout', {
+        content_name: product.name,
+        content_ids: [product.id || 'hoody'],
+        content_type: 'product',
+        value: displayPrice,
+        currency: 'NGN',
+      });
+    }
+
     const query = new URLSearchParams({
       buyNow: 'true',
       id: product.id || '',

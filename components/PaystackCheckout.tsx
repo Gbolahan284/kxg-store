@@ -59,9 +59,22 @@ export default function PaystackCheckout({
 
     initializePayment({
       onSuccess: (reference: any) => {
+        // Fire Meta Pixel Purchase Event
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('track', 'Purchase', {
+            value: amount,
+            currency: 'NGN',
+            order_id: reference?.reference || config.reference,
+          });
+        }
+
         alert('Payment successful! Reference: ' + reference.reference);
         if (clearCart) clearCart();
-        window.location.href = '/';
+
+        // Brief delay ensures the Meta Pixel request finishes sending before redirect
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 500);
       },
       onClose: () => console.log('Payment modal closed'),
     });
