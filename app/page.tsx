@@ -31,7 +31,6 @@ export default async function Home() {
             <p className="text-neutral-500 text-xs font-mono">No products found in this drop.</p>
           </div>
         ) : (
-          /* Borderless Dark Gallery Grid */
           <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16 sm:gap-x-12 sm:gap-y-24">
             {products.map((product: any) => {
               const productUrl =
@@ -40,47 +39,40 @@ export default async function Home() {
                   : product.category || 'hoody';
 
               const cardContent = (
-                <>
-                  {/* Floating Product Image Container (Borderless) */}
+                <div className="relative pt-4">
+                  {/* Sharp Rectangular SOLD OUT Tag (Top-Left) */}
+                  {!product.inStock && (
+                    <div className="absolute top-0 left-0 z-10 bg-white text-black text-[9px] sm:text-[10px] font-black px-2.5 py-1 uppercase tracking-widest">
+                      Sold Out
+                    </div>
+                  )}
+
+                  {/* Floating Garment Cutout */}
                   <div className="relative aspect-square w-full bg-black flex items-center justify-center overflow-hidden">
                     {product.image && (
                       <img
                         src={product.image}
                         alt={product.name}
-                        className={`w-full h-full object-contain transition-transform duration-500 ease-out ${
-                          product.inStock ? 'group-hover:scale-105' : 'opacity-40 grayscale'
-                        }`}
+                        className="w-full h-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
                       />
                     )}
-
-                    {/* Sold Out Badge Overlay */}
-                    {!product.inStock && (
-                      <div className="absolute top-3 right-3 bg-neutral-900/90 text-neutral-400 text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest border border-neutral-800">
-                        Sold Out
-                      </div>
-                    )}
                   </div>
 
-                  {/* Minimal Streetwear Typography & Price */}
-                  <div className="mt-4 flex items-start justify-between gap-2">
-                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-white line-clamp-1 group-hover:text-neutral-300 transition-colors">
+                  {/* Bold Centered Wide Uppercase Title */}
+                  <div className="mt-5 px-2 text-center">
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.14em] scale-x-110 text-white leading-snug group-hover:text-neutral-300 transition-colors">
                       {product.name}
                     </h3>
-                    <span className="text-xs sm:text-sm font-mono text-neutral-400 shrink-0">
-                      ₦{Number(product.price).toLocaleString()}
-                    </span>
                   </div>
-                </>
+                </div>
               );
-
-              const cardStyles = 'group block text-center';
 
               if (product.inStock) {
                 return (
                   <Link
                     key={productUrl}
                     href={`/product/${productUrl}`}
-                    className={cardStyles}
+                    className="group block"
                   >
                     {cardContent}
                   </Link>
@@ -88,12 +80,13 @@ export default async function Home() {
               }
 
               return (
-                <div
+                <Link
                   key={productUrl}
-                  className={`${cardStyles} opacity-60 cursor-not-allowed`}
+                  href={`/product/${productUrl}`}
+                  className="group block"
                 >
                   {cardContent}
-                </div>
+                </Link>
               );
             })}
           </div>
