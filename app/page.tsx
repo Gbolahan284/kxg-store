@@ -31,7 +31,8 @@ export default async function Home() {
             <p className="text-neutral-500 text-xs font-mono">No products found in this drop.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-16 sm:gap-x-12 sm:gap-y-24">
+          /* md:grid-cols-4 gives you the 4-column desktop layout */
+          <div className="grid grid-cols-2 md:grid-cols-4 items-end gap-x-6 gap-y-16 sm:gap-x-10 sm:gap-y-24">
             {products.map((product: any) => {
               const productUrl =
                 product.id && product.id.length > 0
@@ -39,7 +40,7 @@ export default async function Home() {
                   : product.category || 'hoody';
 
               const cardContent = (
-                <div className="relative pt-4">
+                <div className="relative pt-6 flex flex-col items-center">
                   {/* Sharp Rectangular SOLD OUT Tag (Top-Left) */}
                   {!product.inStock && (
                     <div className="absolute top-0 left-0 z-10 bg-white text-black text-[9px] sm:text-[10px] font-black px-2.5 py-1 uppercase tracking-widest">
@@ -47,20 +48,30 @@ export default async function Home() {
                     </div>
                   )}
 
-                  {/* Floating Garment Cutout */}
-                  <div className="relative aspect-square w-full bg-black flex items-center justify-center overflow-hidden">
+                  {/* Free-Form Floating Garment */}
+                  <div className="w-full flex items-end justify-center">
                     {product.image && (
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+                        className={`w-full max-h-[300px] object-contain transition-transform duration-500 ease-out ${
+                          product.inStock
+                            ? 'group-hover:scale-105'
+                            : 'blur-[2px] opacity-60'
+                        }`}
                       />
                     )}
                   </div>
 
                   {/* Bold Centered Wide Uppercase Title */}
-                  <div className="mt-5 px-2 text-center">
-                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-[0.14em] scale-x-110 text-white leading-snug group-hover:text-neutral-300 transition-colors">
+                  <div className="mt-5 px-2 text-center w-full">
+                    <h3
+                      className={`text-xs sm:text-sm font-black uppercase tracking-[0.14em] scale-x-110 leading-snug transition-colors ${
+                        product.inStock
+                          ? 'text-white group-hover:text-neutral-300'
+                          : 'text-neutral-500'
+                      }`}
+                    >
                       {product.name}
                     </h3>
                   </div>
@@ -80,13 +91,13 @@ export default async function Home() {
               }
 
               return (
-                <Link
+                <div
                   key={productUrl}
-                  href={`/product/${productUrl}`}
-                  className="group block"
+                  aria-disabled="true"
+                  className="block cursor-not-allowed select-none"
                 >
                   {cardContent}
-                </Link>
+                </div>
               );
             })}
           </div>
