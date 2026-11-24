@@ -3,57 +3,116 @@
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+// ---------------------------------------------------------------
+// AUTH HELPERS (not exported, so they are not callable from the browser)
+// ---------------------------------------------------------------
+
+function getSecret(): string {
+  const key = process.env.ADMIN_SECRET_KEY;
+  if (!key) {
+    throw new Error('ADMIN_SECRET_KEY is not set.');
+  }
+  return key;
+}
+
+// The cookie value is derived from the secret, so nobody can guess or fake it
+function sessionToken(): string {
+  return createHmac('sha256', getSecret()).update('kxg-admin-session').digest('hex');
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const A = Buffer.from(a);
+  const B = Buffer.from(b);
+  return A.length === B.length && timingSafeEqual(A, B);
+}
 
 async function checkAuth() {
   const cookieStore = await cookies();
-  const auth = cookieStore.get('kxg_admin_auth');
-  if (auth?.value !== 'authenticated') {
+  const auth = cookieStore.get('kxg_admin_auth')?.value ?? '';
+  if (!safeEqual(auth, sessionToken())) {
     throw new Error('Unauthorized access.');
   }
 }
 
-export async function verifyAdminPasscode(passcode: string) {
-  const envKey = process.env.ADMIN_SECRET_KEY || '314200Bolu';
+// ---------------------------------------------------------------
+// SIZE HELPERS
+// ---------------------------------------------------------------
 
-  if (passcode.trim() === envKey) {
-    const cookieStore = await cookies();
-    cookieStore.set('kxg_admin_auth', 'authenticated', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day session
-      path: '/',
-    });
-    return { success: true };
+type SizeItem = { size: string; stock: number };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Cleans the sizes sent from the admin form: valid names, whole numbers, never below 0
+function parseSizes(raw: string | null): SizeItem[] {
+  const parsed: unknown = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(parsed)) {
+    throw new Error('Invalid size inventory data.');
   }
 
-  return { success: false, error: 'Invalid secret passcode.' };
+  return parsed.flatMap((item): SizeItem[] => {
+    if (!isRecord(item) || typeof item.size !== 'string' || item.size.trim() === '') {
+      return [];
+    }
+
+    return [{
+      size: item.size.trim().toUpperCase(),
+      stock: Math.max(0, Math.floor(Number(item.stock) || 0)),
+    }];
+  });
 }
+
+function totalStockOf(sizes: SizeItem[]): number {
+  return sizes.reduce((sum, item) => sum + item.stock, 0);
+}
+
+// ---------------------------------------------------------------
+// LOGIN
+// ---------------------------------------------------------------
+
+export async function verifyAdminPasscode(passcode: string) {
+  let secret: string;
+  try {
+    secret = getSecret();
+  } catch {
+    return { success: false, error: 'Admin is not configured.' };
+  }
+
+  if (!safeEqual((passcode || '').trim(), secret)) {
+    return { success: false, error: 'Invalid secret passcode.' };
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set('kxg_admin_auth', sessionToken(), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24, // 1 day session
+    path: '/',
+  });
+
+  return { success: true };
+}
+
+// ---------------------------------------------------------------
+// PRODUCTS
+// ---------------------------------------------------------------
 
 export async function createProduct(formData: FormData) {
   await checkAuth();
 
-  const name = formData.get('name') as string;
-  const description = formData.get('description') as string;
+  const name = ((formData.get('name') as string) || '').trim();
+  const description = (formData.get('description') as string) || '';
   const price = parseFloat(formData.get('price') as string) || 0;
-  const category = formData.get('category') as string;
-  const image = formData.get('image') as string;
-  const hoverImage = formData.get('hoverImage') as string;
+  const category = ((formData.get('category') as string) || '').trim();
+  const image = ((formData.get('image') as string) || '').trim();
+  const hoverImage = ((formData.get('hoverImage') as string) || '').trim();
 
-  // Extract and parse size inventory JSON safely
-  const rawSizes = formData.get('sizes') as string;
-  let parsedSizes = [];
-  try {
-    const parsed = rawSizes ? JSON.parse(rawSizes) : [];
-    parsedSizes = Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    parsedSizes = [];
-  }
-
-  // Calculate total stock safely from sizes array
-  const totalStock = parsedSizes.reduce(
-    (sum: number, item: { stock?: number }) => sum + (Number(item?.stock) || 0),
-    0
-  );
+  const sizes = parseSizes(formData.get('sizes') as string);
+  const totalStock = totalStockOf(sizes);
 
   if (!name || !price) {
     throw new Error('Name and price are required.');
@@ -62,17 +121,59 @@ export async function createProduct(formData: FormData) {
   await db.product.create({
     data: {
       name,
-      description: description || '',
+      description,
       price,
       category: category || 'Drop 01',
-      image: image || '',
+      image,
       hoverImage: hoverImage || null,
-      sizes: parsedSizes,
+      sizes,
+      // If every size is 0, the product is automatically Sold Out
       inStock: totalStock > 0,
     },
   });
 
   revalidatePath('/');
+  revalidatePath('/admin');
+}
+
+export async function updateProduct(productId: string, formData: FormData) {
+  await checkAuth();
+
+  if (!productId) {
+    throw new Error('Product ID is required.');
+  }
+
+  const name = ((formData.get('name') as string) || '').trim();
+  const description = (formData.get('description') as string) || '';
+  const price = parseFloat(formData.get('price') as string) || 0;
+  const category = ((formData.get('category') as string) || '').trim();
+  const image = ((formData.get('image') as string) || '').trim();
+  const hoverImage = ((formData.get('hoverImage') as string) || '').trim();
+
+  const sizes = parseSizes(formData.get('sizes') as string);
+  const totalStock = totalStockOf(sizes);
+
+  if (!name || !price) {
+    throw new Error('Name and price are required.');
+  }
+
+  await db.product.update({
+    where: { id: productId },
+    data: {
+      name,
+      description,
+      price,
+      category: category || 'Drop 01',
+      image,
+      hoverImage: hoverImage || null,
+      sizes,
+      // Restocking any size flips the product back to In Stock
+      inStock: totalStock > 0,
+    },
+  });
+
+  revalidatePath('/');
+  revalidatePath(`/product/${productId}`);
   revalidatePath('/admin');
 }
 
@@ -86,6 +187,25 @@ export async function getProducts() {
 
 export async function toggleStock(productId: string, currentStatus: boolean) {
   await checkAuth();
+
+  // Don't allow "Mark In Stock" when every size is at 0
+  if (!currentStatus) {
+    const product = await db.product.findUnique({ where: { id: productId } });
+    const raw = product?.sizes;
+    const sizes: SizeItem[] = Array.isArray(raw)
+      ? raw.flatMap((size): SizeItem[] => {
+          if (!isRecord(size)) return [];
+          return [{
+            size: String(size.size ?? ''),
+            stock: Math.max(0, Number(size.stock) || 0),
+          }];
+        })
+      : [];
+
+    if (totalStockOf(sizes) === 0) {
+      throw new Error('All sizes are at 0. Add stock to a size first.');
+    }
+  }
 
   await db.product.update({
     where: { id: productId },
@@ -107,6 +227,10 @@ export async function deleteProduct(productId: string) {
   revalidatePath('/');
   revalidatePath('/admin');
 }
+
+// ---------------------------------------------------------------
+// SUBSCRIBERS
+// ---------------------------------------------------------------
 
 export async function getSubscribers() {
   await checkAuth();

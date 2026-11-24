@@ -9,11 +9,50 @@ interface ProductPageProps {
   }>;
 }
 
+interface SizeStockItem {
+  size: string;
+  stock: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseSizes(value: unknown): SizeStockItem[] {
+  let rawSizes = value;
+  if (typeof rawSizes === 'string') {
+    try {
+      rawSizes = JSON.parse(rawSizes);
+    } catch {
+      return [];
+    }
+  }
+
+  if (Array.isArray(rawSizes)) {
+    return rawSizes.flatMap((item): SizeStockItem[] => {
+      if (!isRecord(item) || typeof item.size !== 'string') return [];
+      return [{
+        size: item.size,
+        stock: Math.max(0, Number(item.stock) || 0),
+      }];
+    });
+  }
+
+  if (isRecord(rawSizes)) {
+    return Object.entries(rawSizes).map(([size, stock]) => ({
+      size,
+      stock: Math.max(0, Number(stock) || 0),
+    }));
+  }
+
+  return [];
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
 
   // Fetch product from DB
-  let product = await db.product.findFirst({
+  const product = await db.product.findFirst({
     where: id && id !== 'test-id' && id !== 'hoody' 
       ? { OR: [{ id }, { name: id }, { category: id }] }
       : {},
@@ -39,13 +78,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.hoverImage || product.image,
   ].filter(Boolean) as string[];
 
-  // Safely parse JSON sizes array with explicit type assertion
-  const rawSizes = (product as any).sizes;
-  const parsedSizes = Array.isArray(rawSizes)
-    ? rawSizes
-    : typeof rawSizes === 'string'
-    ? JSON.parse(rawSizes)
-    : [];
+  const parsedSizes = parseSizes(product.sizes);
 
   return (
     <div className="min-h-screen bg-black text-white font-sans">
@@ -109,7 +142,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 price: product.price,
                 image: product.image || undefined,
                 sizes: parsedSizes,
-              } as any} 
+              }}
             />
 
             {/* Description */}

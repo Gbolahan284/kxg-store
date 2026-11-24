@@ -8,6 +8,7 @@ export default function TimedPopupModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'already_subscribed' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
     // Check if the user already dismissed or submitted this popup during this session
@@ -38,6 +39,7 @@ export default function TimedPopupModal() {
       const res = await subscribeToNewsletter(email);
 
       if (res.success) {
+        setStatusMessage(res.message || 'Welcome to the KXG community.');
         setStatus('success');
         setTimeout(() => {
           handleClose();
@@ -88,11 +90,11 @@ export default function TimedPopupModal() {
         {/* Form State Displays */}
         {status === 'success' ? (
           <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl text-xs font-mono text-green-400">
-            ✓ YOU'RE IN. WELCOME TO THE COMMUNITY.
+            ✓ {statusMessage}
           </div>
         ) : status === 'already_subscribed' ? (
           <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl text-xs font-mono text-amber-400">
-            ⚡ ALREADY A MEMBER! YOU'RE ALREADY IN THE CLUB.
+            ⚡ ALREADY A MEMBER! YOU&apos;RE ALREADY IN THE CLUB.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -126,7 +128,7 @@ export default function TimedPopupModal() {
           onClick={handleClose}
           className="text-xs text-neutral-500 hover:text-neutral-300 underline font-mono cursor-pointer transition-colors"
         >
-          No thanks, I'd rather follow
+          No thanks, I&apos;d rather follow
         </button>
       </div>
     </div>

@@ -1,19 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  createProduct, 
-  verifyAdminPasscode, 
-  getProducts, 
-  toggleStock, 
-  deleteProduct 
+import {
+  createProduct,
+  updateProduct,
+  verifyAdminPasscode,
+  getProducts,
+  getSubscribers,
+  toggleStock,
+  deleteProduct,
 } from './actions';
 
 interface Subscriber {
   id: string;
   email: string;
   createdAt: Date | string;
+}
+
+interface SizeStockItem {
+  size: string;
+  stock: number;
 }
 
 interface Product {
@@ -26,8 +33,68 @@ interface Product {
   hoverImage?: string | null;
   isFeatured?: boolean;
   inStock: boolean;
-  sizes?: any;
+  sizes?: unknown;
   createdAt: Date | string;
+}
+
+const DEFAULT_SIZES: SizeStockItem[] = [
+  { size: 'S', stock: 10 },
+  { size: 'M', stock: 20 },
+  { size: 'L', stock: 15 },
+  { size: 'XL', stock: 5 },
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeSizes(rawSizes: unknown): SizeStockItem[] {
+  const base = ['S', 'M', 'L', 'XL'];
+  const map = new Map<string, number>();
+
+  if (Array.isArray(rawSizes)) {
+    for (const entry of rawSizes) {
+      if (isRecord(entry) && typeof entry.size === 'string') {
+        map.set(entry.size.toUpperCase(), Math.max(0, Number(entry.stock) || 0));
+      }
+    }
+  } else if (isRecord(rawSizes)) {
+    for (const [key, val] of Object.entries(rawSizes)) {
+      map.set(key.toUpperCase(), Math.max(0, Number(val) || 0));
+    }
+  }
+
+  return base.map((sz) => ({
+    size: sz,
+    stock: map.has(sz) ? map.get(sz)! : 0,
+  }));
+}
+
+// Small badges showing stock per size inside the inventory table
+function SizeBadges({ sizes }: { sizes: unknown }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {normalizeSizes(sizes).map((s) => (
+        <span
+          key={s.size}
+          className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
+            s.stock === 0
+              ? 'border-red-800 text-red-400 line-through'
+              : s.stock <= 3
+              ? 'border-amber-700 text-amber-400'
+              : 'border-neutral-700 text-neutral-300'
+          }`}
+        >
+          {s.size}:{s.stock}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function formatDate(value: Date | string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
 }
 
 export default function AdminPage() {
@@ -36,37 +103,71 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'subscribers'>('products');
-  
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
 
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loadingSubscribers, setLoadingSubscribers] = useState(false);
   const [subscriberError, setSubscriberError] = useState<string | null>(null);
 
+  // --- EDIT MODE STATE ---
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [price, setPrice] = useState('');
+  const [image, setImage] = useState('');
+  const [hoverImage, setHoverImage] = useState('');
+  const [description, setDescription] = useState('');
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // --- SIZE INVENTORY STATE ---
-  const [sizes, setSizes] = useState([
-    { size: 'S', stock: 10 },
-    { size: 'M', stock: 20 },
-    { size: 'L', stock: 15 },
-    { size: 'XL', stock: 5 },
-  ]);
+  const [sizes, setSizes] = useState<SizeStockItem[]>(DEFAULT_SIZES.map((s) => ({ ...s })));
 
   const handleStockChange = (index: number, newStock: number) => {
     const updated = [...sizes];
-    updated[index].stock = Math.max(0, newStock);
+    updated[index] = {
+      ...updated[index],
+      stock: Math.max(0, Number.isNaN(newStock) ? 0 : newStock),
+    };
     setSizes(updated);
+  };
+
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setName('');
+    setCategory('');
+    setPrice('');
+    setImage('');
+    setHoverImage('');
+    setDescription('');
+    setSizes(DEFAULT_SIZES.map((s) => ({ ...s })));
+  };
+
+  const handleSelectProductToEdit = (product: Product) => {
+    setError(null);
+    setSuccessMessage(null);
+    setEditingProductId(product.id);
+    setName(product.name || '');
+    setCategory(product.category || '');
+    setPrice(String(product.price ?? ''));
+    setImage(product.image || '');
+    setHoverImage(product.hoverImage || '');
+    setDescription(product.description || '');
+    setSizes(normalizeSizes(product.sizes));
+    setActiveTab('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   async function loadProductsData() {
     setLoadingProducts(true);
     try {
       const data = await getProducts();
-      setProducts((data as any) || []);
+      setProducts(data);
     } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
@@ -74,51 +175,36 @@ export default function AdminPage() {
     }
   }
 
-  // --- SAFELY FETCH AND PARSE SUBSCRIBERS ---
+  // Subscribers now come from the protected server action (login required)
   async function loadSubscribersData() {
     setLoadingSubscribers(true);
     setSubscriberError(null);
     try {
-      const res = await fetch('/api/newsletter');
-      const data = await res.json();
+      const list = await getSubscribers();
 
-      if (!res.ok) {
-        throw new Error(data.error || `Request failed (${res.status}).`);
-      }
-
-      const list = Array.isArray(data) ? data : (data.subscribers || data.data || []);
-      if (!Array.isArray(list)) {
-        throw new Error('The server returned an unexpected subscriber response.');
-      }
-
-      const formatted: Subscriber[] = list.map((sub: any, index: number) => ({
+      const formatted: Subscriber[] = (list || []).map((sub, index) => ({
         id: sub.id || String(index),
-        email: typeof sub === 'string' ? sub : (sub.email || 'N/A'),
-        createdAt: typeof sub === 'object' && sub !== null 
-          ? (sub.createdAt || sub.date || sub.timestamp || new Date().toISOString()) 
-          : new Date().toISOString(),
+        email: sub.email || 'N/A',
+        createdAt: sub.createdAt || new Date().toISOString(),
       }));
-      
+
       setSubscribers(formatted);
     } catch (err) {
       console.error('Failed to load subscribers:', err);
-      setSubscriberError(
-        err instanceof Error ? err.message : 'Failed to load subscribers. Check the deployment logs.',
-      );
+      setSubscriberError('Failed to load subscribers. Please log in again and retry.');
     } finally {
       setLoadingSubscribers(false);
     }
   }
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (activeTab === 'inventory') {
-        loadProductsData();
-      } else if (activeTab === 'subscribers') {
-        loadSubscribersData();
-      }
+  function handleTabChange(tab: 'products' | 'inventory' | 'subscribers') {
+    setActiveTab(tab);
+    if (tab === 'inventory') {
+      void loadProductsData();
+    } else if (tab === 'subscribers') {
+      void loadSubscribersData();
     }
-  }, [activeTab, isAuthenticated]);
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -137,49 +223,66 @@ export default function AdminPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-    setSuccess(false);
+    setSuccessMessage(null);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
-    
-    // Append JSON serialized sizes to FormData
-    formData.append('sizes', JSON.stringify(sizes));
+    const formData = new FormData();
+    formData.set('name', name.trim());
+    formData.set('category', category.trim());
+    formData.set('price', price);
+    formData.set('image', image.trim());
+    formData.set('hoverImage', hoverImage.trim());
+    formData.set('description', description);
+    formData.set('sizes', JSON.stringify(sizes));
 
     try {
-      await createProduct(formData);
-      setSuccess(true);
-      (event.target as HTMLFormElement).reset();
-      // Reset default size stock quantities
-      setSizes([
-        { size: 'S', stock: 10 },
-        { size: 'M', stock: 20 },
-        { size: 'L', stock: 15 },
-        { size: 'XL', stock: 5 },
-      ]);
-      loadProductsData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to add product.');
+      if (editingProductId) {
+        await updateProduct(editingProductId, formData);
+        setSuccessMessage('Product updated and saved to live store!');
+      } else {
+        await createProduct(formData);
+        setSuccessMessage('Product created successfully and published to live drop!');
+      }
+      resetProductForm();
+      await loadProductsData();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : editingProductId
+            ? 'Failed to update product.'
+            : 'Failed to add product.'
+      );
     } finally {
       setLoading(false);
     }
   }
 
   async function handleToggleStock(productId: string, currentStatus: boolean) {
+    setInventoryError(null);
     try {
       await toggleStock(productId, currentStatus);
       await loadProductsData();
     } catch (err) {
       console.error('Failed to toggle stock:', err);
+      setInventoryError(
+        'Could not change the stock status. If every size is at 0, add stock to a size first (click Edit).'
+      );
     }
   }
 
   async function handleDeleteProduct(productId: string) {
     if (!confirm('Are you sure you want to delete this product?')) return;
+    setInventoryError(null);
     try {
       await deleteProduct(productId);
+      if (editingProductId === productId) {
+        resetProductForm();
+      }
       await loadProductsData();
     } catch (err) {
       console.error('Failed to delete product:', err);
+      setInventoryError('Could not delete the product. Please try again.');
     }
   }
 
@@ -255,18 +358,18 @@ export default function AdminPage() {
       {/* TABS */}
       <div className="flex flex-wrap gap-4 mb-8">
         <button
-          onClick={() => setActiveTab('products')}
+          onClick={() => handleTabChange('products')}
           className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors ${
             activeTab === 'products'
               ? 'bg-white text-black'
               : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
           }`}
         >
-          Upload New Drop
+          {editingProductId ? 'Edit Product' : 'Upload New Drop'}
         </button>
 
         <button
-          onClick={() => setActiveTab('inventory')}
+          onClick={() => handleTabChange('inventory')}
           className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center gap-2 ${
             activeTab === 'inventory'
               ? 'bg-white text-black'
@@ -280,7 +383,7 @@ export default function AdminPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('subscribers')}
+          onClick={() => handleTabChange('subscribers')}
           className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors flex items-center gap-2 ${
             activeTab === 'subscribers'
               ? 'bg-white text-black'
@@ -294,20 +397,39 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* TAB 1: PRODUCT UPLOAD */}
+      {/* TAB 1: PRODUCT UPLOAD / EDIT */}
       {activeTab === 'products' && (
         <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6 md:p-8">
-          {success && (
+          {editingProductId && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-800/70 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                Editing Existing Product: <span className="text-white">{name || editingProductId}</span>
+              </div>
+              <button
+                type="button"
+                onClick={resetProductForm}
+                className="text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+              >
+                Cancel Edit (New Drop)
+              </button>
+            </div>
+          )}
+
+          {successMessage && (
             <div className="mb-6 p-4 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-sm font-bold flex justify-between items-center">
-              <span>Product created successfully and published to live drop!</span>
-              <button onClick={() => setSuccess(false)} className="text-emerald-400 hover:text-white">✕</button>
+              <span>{successMessage}</span>
+              <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white">
+                ✕
+              </button>
             </div>
           )}
 
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-sm font-bold flex justify-between items-center">
               <span>{error}</span>
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-white">✕</button>
+              <button onClick={() => setError(null)} className="text-red-400 hover:text-white">
+                ✕
+              </button>
             </div>
           )}
 
@@ -321,6 +443,8 @@ export default function AdminPage() {
                   type="text"
                   name="name"
                   required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. KXG OVERSIZED HOODIE"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
@@ -333,6 +457,8 @@ export default function AdminPage() {
                 <input
                   type="text"
                   name="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
                   placeholder="e.g. HOODIES / Drop 01"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
@@ -349,7 +475,9 @@ export default function AdminPage() {
                   step="0.01"
                   name="price"
                   required
-                  placeholder="50000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="1000"
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
               </div>
@@ -362,6 +490,8 @@ export default function AdminPage() {
                   type="text"
                   name="image"
                   required
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
                   placeholder="https://..."
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
@@ -374,6 +504,8 @@ export default function AdminPage() {
                 <input
                   type="text"
                   name="hoverImage"
+                  value={hoverImage}
+                  onChange={(e) => setHoverImage(e.target.value)}
                   placeholder="https://..."
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors"
                 />
@@ -387,13 +519,16 @@ export default function AdminPage() {
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {sizes.map((item, idx) => (
-                  <div key={item.size} className="flex items-center gap-2 bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                  <div
+                    key={item.size}
+                    className="flex items-center gap-2 bg-neutral-950 p-3 rounded-xl border border-neutral-800"
+                  >
                     <span className="text-white font-mono font-bold w-6">{item.size}:</span>
                     <input
                       type="number"
                       min="0"
                       value={item.stock}
-                      onChange={(e) => handleStockChange(idx, parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleStockChange(idx, parseInt(e.target.value, 10) || 0)}
                       className="bg-neutral-900 text-white px-3 py-1 rounded-lg border border-neutral-700 w-full text-sm font-mono focus:outline-none focus:border-neutral-500"
                     />
                   </div>
@@ -408,18 +543,38 @@ export default function AdminPage() {
               <textarea
                 name="description"
                 rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Heavyweight cotton construction. High density screen print..."
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors resize-none"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Publishing Drop...' : 'Publish Product to Store'}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors disabled:opacity-50"
+              >
+                {loading
+                  ? editingProductId
+                    ? 'Saving Changes...'
+                    : 'Publishing Drop...'
+                  : editingProductId
+                  ? 'Save Product Changes'
+                  : 'Publish Product to Store'}
+              </button>
+
+              {editingProductId && (
+                <button
+                  type="button"
+                  onClick={resetProductForm}
+                  className="py-4 px-6 bg-neutral-900 text-neutral-300 border border-neutral-800 font-bold uppercase tracking-widest rounded-xl hover:text-white transition-colors text-xs"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </div>
       )}
@@ -428,7 +583,12 @@ export default function AdminPage() {
       {activeTab === 'inventory' && (
         <div className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6 md:p-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold uppercase tracking-tight">Current Inventory</h2>
+            <div>
+              <h2 className="text-xl font-bold uppercase tracking-tight">Current Inventory</h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Click any product name or Edit to modify price, sizes, or details.
+              </p>
+            </div>
             <button
               onClick={loadProductsData}
               className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white transition-colors"
@@ -436,6 +596,15 @@ export default function AdminPage() {
               Refresh Items
             </button>
           </div>
+
+          {inventoryError && (
+            <div className="mb-6 p-4 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-sm font-bold flex justify-between items-center gap-4">
+              <span>{inventoryError}</span>
+              <button onClick={() => setInventoryError(null)} className="text-red-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+          )}
 
           {loadingProducts ? (
             <p className="text-sm text-neutral-500 py-8 text-center">Loading product list...</p>
@@ -448,6 +617,7 @@ export default function AdminPage() {
                   <tr className="border-b border-neutral-800 text-xs font-bold uppercase tracking-widest text-neutral-500">
                     <th className="pb-3 px-2">Item</th>
                     <th className="pb-3 px-2">Price</th>
+                    <th className="pb-3 px-2">Sizes</th>
                     <th className="pb-3 px-2">Status</th>
                     <th className="pb-3 px-2 text-right">Actions</th>
                   </tr>
@@ -455,8 +625,19 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-neutral-800/60">
                   {products.map((item) => (
                     <tr key={item.id} className="hover:bg-neutral-900/50 transition-colors">
-                      <td className="py-4 px-2 font-bold">{item.name}</td>
+                      <td className="py-4 px-2 font-bold">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectProductToEdit(item)}
+                          className="text-left font-bold text-white hover:underline cursor-pointer"
+                        >
+                          {item.name}
+                        </button>
+                      </td>
                       <td className="py-4 px-2 text-neutral-400">₦{item.price.toLocaleString()}</td>
+                      <td className="py-4 px-2">
+                        <SizeBadges sizes={item.sizes} />
+                      </td>
                       <td className="py-4 px-2">
                         <span
                           className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
@@ -468,14 +649,23 @@ export default function AdminPage() {
                           {item.inStock ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </td>
-                      <td className="py-4 px-2 text-right space-x-2">
+                      <td className="py-4 px-2 text-right space-x-2 whitespace-nowrap">
                         <button
+                          type="button"
+                          onClick={() => handleSelectProductToEdit(item)}
+                          className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleToggleStock(item.id, item.inStock)}
                           className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold transition-colors"
                         >
                           {item.inStock ? 'Mark Sold Out' : 'Mark In Stock'}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteProduct(item.id)}
                           className="px-3 py-1.5 rounded-lg bg-red-950/80 border border-red-800 text-red-300 hover:bg-red-900 text-xs font-bold transition-colors"
                         >
@@ -526,7 +716,7 @@ export default function AdminPage() {
                     <tr key={sub.id} className="hover:bg-neutral-900/50 transition-colors">
                       <td className="py-4 px-2 font-mono text-neutral-200">{sub.email}</td>
                       <td className="py-4 px-2 text-right text-xs text-neutral-500">
-                        {typeof sub.createdAt === 'string' ? sub.createdAt : new Date(sub.createdAt).toLocaleDateString()}
+                        {formatDate(sub.createdAt)}
                       </td>
                     </tr>
                   ))}

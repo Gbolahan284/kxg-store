@@ -6,6 +6,7 @@ import Link from 'next/link';
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,6 +30,7 @@ export default function Footer() {
       }
 
       setSubscribed(true);
+      setSuccessMessage(data.message || 'You are subscribed. Check your inbox for a welcome email.');
       setEmail('');
     } catch {
       setError('Unable to subscribe. Please try again.');
@@ -103,7 +105,7 @@ export default function Footer() {
           </h3>
           {subscribed ? (
             <p className="text-sm font-bold text-emerald-400">
-              You&apos;re in. Watch your inbox for the next drop.
+              {successMessage}
             </p>
           ) : (
             <form onSubmit={handleSubscribe} className="flex flex-col gap-3">

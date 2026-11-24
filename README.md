@@ -16,6 +16,17 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Newsletter welcome emails
+
+Newsletter signups are saved even when email delivery is unavailable. To send welcome emails, configure these server-side environment variables:
+
+```env
+RESEND_API_KEY="your_resend_api_key"
+RESEND_FROM_EMAIL="KXG <hello@your-verified-domain.com>"
+```
+
+Verify the sender's domain in Resend before using it. Resend's `onboarding@resend.dev` sender is intended for testing and cannot be used to send welcome emails to arbitrary subscribers. Restart the dev server after changing environment variables. Signup feedback reports when the subscriber was saved but the welcome email could not be sent.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -4,66 +4,104 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 
+interface SizeStockItem {
+  size: string;
+  stock: number;
+}
+
 interface AddToCartSectionProps {
   product: {
     id: string;
     name: string;
     price: number;
     image?: string;
+    sizes?: SizeStockItem[];
   };
 }
 
 const SIZES = ['M', 'L', 'XL', '2XL'];
 
+const SIZE_CHART = [
+  { size: 'M', chest: '40 - 42"', length: '29"', shoulder: '18.5"' },
+  { size: 'L', chest: '42 - 44"', length: '30"', shoulder: '19.5"' },
+  { size: 'XL', chest: '44 - 46"', length: '31"', shoulder: '20.5"' },
+  { size: '2XL', chest: '46 - 48"', length: '32"', shoulder: '21.5"' },
+];
+
+type PixelParams = Record<string, string | number | string[]>;
+
+function trackPixel(eventName: string, params: PixelParams) {
+  if (typeof window === 'undefined') return;
+
+  const pixel = (window as Window & {
+    fbq?: (action: string, eventName: string, params: PixelParams) => void;
+  }).fbq;
+  pixel?.('track', eventName, params);
+}
+
 export default function AddToCartSection({ product }: AddToCartSectionProps) {
-  const [selectedSize, setSelectedSize] = useState('M');
+  const getSizeQty = (size: string): number => {
+    const inventory = product.sizes?.find(
+      (item) => item.size.toUpperCase() === size.toUpperCase()
+    );
+    return Math.max(0, Number(inventory?.stock) || 0);
+  };
+
+  const firstAvailableSize = SIZES.find((size) => getSizeQty(size) > 0) ?? '';
+
+  const [selectedSize, setSelectedSize] = useState<string>(firstAvailableSize);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isDeliveryOpen, setIsDeliveryOpen] = useState(false);
+  const activeSelectedSize =
+    selectedSize && getSizeQty(selectedSize) > 0 ? selectedSize : firstAvailableSize;
 
   const { addToCart } = useCart();
   const router = useRouter();
 
   const displayPrice = product.price > 0 ? product.price : 40000;
+  const isAnySizeAvailable = Boolean(firstAvailableSize);
+  const canSubmit =
+    isAnySizeAvailable && Boolean(activeSelectedSize) && getSizeQty(activeSelectedSize) > 0;
 
   const handleAddToCart = () => {
+    if (!canSubmit) return;
+
     // Fire Meta Pixel AddToCart Event
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'AddToCart', {
-        content_name: product.name,
-        content_ids: [product.id || 'hoody'],
-        content_type: 'product',
-        value: displayPrice,
-        currency: 'NGN',
-      });
-    }
+    trackPixel('AddToCart', {
+      content_name: product.name,
+      content_ids: [product.id || 'hoody'],
+      content_type: 'product',
+      value: displayPrice,
+      currency: 'NGN',
+    });
 
     addToCart({
       id: product.id || 'hoody',
       name: product.name,
       price: displayPrice,
       image: product.image,
-      size: selectedSize,
+      size: activeSelectedSize,
     });
   };
 
   const handleBuyNow = () => {
+    if (!canSubmit) return;
+
     // Fire Meta Pixel InitiateCheckout Event for Buy Now
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'InitiateCheckout', {
-        content_name: product.name,
-        content_ids: [product.id || 'hoody'],
-        content_type: 'product',
-        value: displayPrice,
-        currency: 'NGN',
-      });
-    }
+    trackPixel('InitiateCheckout', {
+      content_name: product.name,
+      content_ids: [product.id || 'hoody'],
+      content_type: 'product',
+      value: displayPrice,
+      currency: 'NGN',
+    });
 
     const query = new URLSearchParams({
       buyNow: 'true',
       id: product.id || '',
       name: product.name,
       price: displayPrice.toString(),
-      size: selectedSize,
+      size: activeSelectedSize,
       image: product.image || '',
     }).toString();
 
@@ -78,7 +116,7 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
             Select Size
           </h3>
-          
+
           {/* Size Guide Trigger Link */}
           <button
             type="button"
@@ -90,20 +128,31 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {SIZES.map((size) => (
-            <button
-              key={size}
-              type="button"
-              onClick={() => setSelectedSize(size)}
-              className={`h-12 min-w-[48px] px-4 rounded-xl border font-bold text-sm flex items-center justify-center transition-all cursor-pointer ${
-                selectedSize === size
-                  ? 'bg-white text-black border-white shadow-lg'
-                  : 'border-neutral-800 text-neutral-400 bg-neutral-900 hover:border-neutral-600 hover:text-white'
-              }`}
-            >
-              {size}
-            </button>
-          ))}
+          {SIZES.map((size) => {
+            const isOutOfStock = getSizeQty(size) <= 0;
+            const isSelected = !isOutOfStock && activeSelectedSize === size;
+
+            return (
+              <button
+                key={size}
+                type="button"
+                disabled={isOutOfStock}
+                aria-disabled={isOutOfStock}
+                onClick={() => {
+                  if (!isOutOfStock) setSelectedSize(size);
+                }}
+                className={`h-12 min-w-[48px] px-4 rounded-xl border font-bold text-sm flex items-center justify-center transition-all ${
+                  isOutOfStock
+                    ? 'line-through opacity-40 cursor-not-allowed border-neutral-800 bg-neutral-950 text-neutral-500'
+                    : isSelected
+                    ? 'bg-white text-black border-white shadow-lg cursor-pointer'
+                    : 'border-neutral-800 text-neutral-400 bg-neutral-900 hover:border-neutral-600 hover:text-white cursor-pointer'
+                }`}
+              >
+                {size}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -111,16 +160,28 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
       <div className="space-y-3 mb-8">
         <button
           type="button"
+          disabled={!canSubmit}
           onClick={handleAddToCart}
-          className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 active:scale-[0.99] transition-all cursor-pointer shadow-md text-sm"
+          className={`w-full py-4 font-black uppercase tracking-widest rounded-xl transition-all text-sm ${
+            canSubmit
+              ? 'bg-white text-black hover:bg-neutral-200 active:scale-[0.99] cursor-pointer shadow-md'
+              : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+          }`}
         >
-          Add to Cart • ₦{displayPrice.toLocaleString()}
+          {canSubmit
+            ? `Add to Cart • ₦${displayPrice.toLocaleString()}`
+            : 'Sold Out'}
         </button>
 
         <button
           type="button"
+          disabled={!canSubmit}
           onClick={handleBuyNow}
-          className="w-full py-4 bg-neutral-900 text-white font-black uppercase tracking-widest rounded-xl border border-neutral-800 hover:bg-neutral-800 active:scale-[0.99] transition-all cursor-pointer text-sm"
+          className={`w-full py-4 font-black uppercase tracking-widest rounded-xl border transition-all text-sm ${
+            canSubmit
+              ? 'bg-neutral-900 text-white border-neutral-800 hover:bg-neutral-800 active:scale-[0.99] cursor-pointer'
+              : 'bg-neutral-950 text-neutral-600 border-neutral-900 cursor-not-allowed'
+          }`}
         >
           Buy it now
         </button>
@@ -206,61 +267,43 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-800">
-                  <tr
-                    onClick={() => {
-                      setSelectedSize('M');
-                      setIsSizeGuideOpen(false);
-                    }}
-                    className="hover:bg-neutral-900 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3 px-3 font-bold text-white">M</td>
-                    <td className="py-3 px-3 text-neutral-300">40 - 42"</td>
-                    <td className="py-3 px-3 text-neutral-300">29"</td>
-                    <td className="py-3 px-3 text-neutral-300">18.5"</td>
-                  </tr>
-                  <tr
-                    onClick={() => {
-                      setSelectedSize('L');
-                      setIsSizeGuideOpen(false);
-                    }}
-                    className="hover:bg-neutral-900 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3 px-3 font-bold text-white">L</td>
-                    <td className="py-3 px-3 text-neutral-300">42 - 44"</td>
-                    <td className="py-3 px-3 text-neutral-300">30"</td>
-                    <td className="py-3 px-3 text-neutral-300">19.5"</td>
-                  </tr>
-                  <tr
-                    onClick={() => {
-                      setSelectedSize('XL');
-                      setIsSizeGuideOpen(false);
-                    }}
-                    className="hover:bg-neutral-900 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3 px-3 font-bold text-white">XL</td>
-                    <td className="py-3 px-3 text-neutral-300">44 - 46"</td>
-                    <td className="py-3 px-3 text-neutral-300">31"</td>
-                    <td className="py-3 px-3 text-neutral-300">20.5"</td>
-                  </tr>
-                  <tr
-                    onClick={() => {
-                      setSelectedSize('2XL');
-                      setIsSizeGuideOpen(false);
-                    }}
-                    className="hover:bg-neutral-900 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3 px-3 font-bold text-white">2XL</td>
-                    <td className="py-3 px-3 text-neutral-300">46 - 48"</td>
-                    <td className="py-3 px-3 text-neutral-300">32"</td>
-                    <td className="py-3 px-3 text-neutral-300">21.5"</td>
-                  </tr>
+                  {SIZE_CHART.map((row) => {
+                    const rowOutOfStock = getSizeQty(row.size) <= 0;
+
+                    return (
+                      <tr
+                        key={row.size}
+                        onClick={() => {
+                          if (rowOutOfStock) return;
+                          setSelectedSize(row.size);
+                          setIsSizeGuideOpen(false);
+                        }}
+                        className={`transition-colors ${
+                          rowOutOfStock
+                            ? 'opacity-40 cursor-not-allowed'
+                            : 'hover:bg-neutral-900 cursor-pointer'
+                        }`}
+                      >
+                        <td
+                          className={`py-3 px-3 font-bold ${
+                            rowOutOfStock ? 'line-through text-neutral-500' : 'text-white'
+                          }`}
+                        >
+                          {row.size}
+                        </td>
+                        <td className="py-3 px-3 text-neutral-300">{row.chest}</td>
+                        <td className="py-3 px-3 text-neutral-300">{row.length}</td>
+                        <td className="py-3 px-3 text-neutral-300">{row.shoulder}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Modal Footer */}
             <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
-              <p>Click any row to select that size.</p>
+              <p>Click any available row to select that size.</p>
               <button
                 type="button"
                 onClick={() => setIsSizeGuideOpen(false)}

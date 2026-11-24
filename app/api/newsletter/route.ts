@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { Prisma } from '../../generated/prisma/client';
 import { db } from '@/lib/db';
+import { subscribeToNewsletter } from '@/lib/newsletter';
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -21,34 +21,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
 
-  const email = body.email.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
+  const result = await subscribeToNewsletter(body.email);
+  if (result.status === 'invalid') {
+    return NextResponse.json({ error: result.message }, { status: 400 });
+  }
+  if (result.status === 'failed') {
+    return NextResponse.json({ error: result.message }, { status: 500 });
   }
 
-  try {
-    const subscriber = await db.newsletterSubscriber.create({
-      data: { email },
-    });
-
-    return NextResponse.json(
-      { message: 'Subscribed successfully.', subscriber },
-      { status: 201 },
-    );
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      return NextResponse.json({ message: 'You are already subscribed.' });
-    }
-
-    console.error('Newsletter subscription failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to subscribe. Please try again later.' },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json(
+    { message: result.message, welcomeEmailSent: result.status === 'subscribed' && result.welcomeEmailSent },
+    { status: result.status === 'subscribed' ? 201 : 200 },
+  );
 }
 
 export async function GET() {

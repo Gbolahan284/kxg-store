@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePaystackPayment } from 'react-paystack';
 
 interface PaystackCheckoutProps {
@@ -28,6 +28,8 @@ export default function PaystackCheckout({
   phone,
   clearCart,
 }: PaystackCheckoutProps) {
+  const [loading, setLoading] = useState(false);
+
   const config = {
     reference: `kxg_${new Date().getTime()}`,
     email: email.trim() || `customer_${Date.now()}@kxgstore.com`,
@@ -57,9 +59,11 @@ export default function PaystackCheckout({
       return;
     }
 
+    setLoading(true);
+
     initializePayment({
-      onSuccess: (reference: any) => {
-        // Fire Meta Pixel Purchase Event
+      onSuccess: async (reference: any) => {
+        // 1. Fire Meta Pixel Purchase Event
         if (typeof window !== 'undefined' && (window as any).fbq) {
           (window as any).fbq('track', 'Purchase', {
             value: amount,
@@ -68,15 +72,36 @@ export default function PaystackCheckout({
           });
         }
 
+        // 2. Trigger Resend Email API Route
+        try {
+          await fetch('/api/send-order-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email.trim() || config.email,
+              customerName: `${firstName} ${lastName}`,
+              orderId: reference?.reference || config.reference,
+              amount,
+              address: `${address}, ${city}, ${state}`,
+              phone,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to trigger order confirmation email:', err);
+        }
+
         alert('Payment successful! Reference: ' + reference.reference);
         if (clearCart) clearCart();
 
-        // Brief delay ensures the Meta Pixel request finishes sending before redirect
+        // Brief delay ensures requests finish sending before redirect
         setTimeout(() => {
           window.location.href = '/';
-        }, 500);
+        }, 1000);
       },
-      onClose: () => console.log('Payment modal closed'),
+      onClose: () => {
+        setLoading(false);
+        console.log('Payment modal closed');
+      },
     });
   };
 
@@ -84,9 +109,10 @@ export default function PaystackCheckout({
     <button
       type="button"
       onClick={handlePayNow}
-      className="w-full py-4 bg-black text-white font-bold rounded-md hover:bg-neutral-800 transition cursor-pointer"
+      disabled={loading}
+      className="w-full py-4 bg-black text-white font-bold rounded-md hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
     >
-      Pay now
+      {loading ? 'Processing...' : 'Pay now'}
     </button>
   );
 }
