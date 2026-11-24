@@ -21,11 +21,17 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 Newsletter signups are saved even when email delivery is unavailable. To send welcome emails, configure these server-side environment variables:
 
 ```env
-RESEND_API_KEY="your_resend_api_key"
+RESEND_API_KEY="your_new_resend_api_key"
 RESEND_FROM_EMAIL="KXG <hello@your-verified-domain.com>"
+PAYSTACK_SECRET_KEY="your_rotated_paystack_secret_key"
+ADMIN_SECRET_KEY="a_new_private_admin_passcode"
 ```
 
 Verify the sender's domain in Resend before using it. Resend's `onboarding@resend.dev` sender is intended for testing and cannot be used to send welcome emails to arbitrary subscribers. Restart the dev server after changing environment variables. Signup feedback reports when the subscriber was saved but the welcome email could not be sent.
+
+Order confirmation emails use the same verified Resend sender and are sent only after the transaction is verified with Paystack. For production delivery even when a customer closes the payment tab, configure the Paystack dashboard webhook URL as `https://your-domain.com/api/paystack/webhook`. The checkout callback also verifies the transaction and sends the email; Resend idempotency prevents callback/webhook duplicates.
+
+Keep all secret values in local environment configuration or your hosting provider's environment settings—never commit them. If a key or passcode is exposed, rotate it in its provider dashboard and replace the old value.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
