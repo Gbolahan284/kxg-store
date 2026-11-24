@@ -43,6 +43,9 @@ export const metadata: Metadata = {
   ],
   verification: {
     google: 'x6HO0VUgG8ExP3ba25kNp-I6NifXlaUsfEl_B4T1bc0',
+    other: {
+      'msvalidate.01': 'E018CE3E7C2E2462F92E1BB6A864A499',
+    },
   },
   alternates: {
     canonical: 'https://www.fitbykxg.com',
