@@ -3,7 +3,9 @@ import { db } from '@/lib/db';
 import { Resend } from 'resend';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DEFAULT_FROM_EMAIL = 'KXG <onboarding@resend.dev>';
+const DEFAULT_FROM_EMAIL = 'KXG <hello@fitbykxg.com>';
+const WELCOME_TEMPLATE_ID =
+  process.env.RESEND_WELCOME_TEMPLATE_ID || '85462a57-be26-4431-b087-7d7f6925d163';
 
 export type NewsletterSubscriptionResult =
   | { status: 'invalid'; message: string }
@@ -40,29 +42,25 @@ export async function subscribeToNewsletter(email: string): Promise<NewsletterSu
 
   try {
     const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL,
       to: [cleanEmail],
-      subject: 'Welcome to the KXG Inner Circle',
-      html: `
-        <div style="font-family: Arial, sans-serif; background: #000; color: #fff; padding: 32px; border-radius: 12px;">
-          <p style="color: #aaa; font-size: 12px; letter-spacing: 3px; text-transform: uppercase;">KXG</p>
-          <h1 style="font-size: 24px; text-transform: uppercase;">Welcome to the Inner Circle.</h1>
-          <p style="color: #ddd; line-height: 1.6;">You’re on the list. We’ll email you about new drops, early access, and exclusive releases.</p>
-          <p style="color: #aaa; font-size: 13px;">Always stay fly, never follow.</p>
-        </div>
-      `,
+      replyTo: 'fitbykxg@gmail.com',
+      template: {
+        id: WELCOME_TEMPLATE_ID,
+      },
     });
 
     if (error) {
-      console.error('Resend could not deliver the newsletter welcome email:', error);
+      console.error('Resend template send error:', JSON.stringify(error, null, 2));
       return {
         status: 'subscribed',
-        message:
-          'You are subscribed, but we could not send your welcome email. Check that your Resend sender address uses a verified domain.',
+        message: `You are subscribed, but we could not send your welcome email (${error.message}).`,
         welcomeEmailSent: false,
       };
     }
+
+    console.log('Resend welcome email queued:', data);
   } catch (error) {
     console.error('Failed to send newsletter welcome email:', error);
     return {
@@ -75,7 +73,7 @@ export async function subscribeToNewsletter(email: string): Promise<NewsletterSu
 
   return {
     status: 'subscribed',
-    message: 'Welcome to the KXG Inner Circle! Check your inbox for our welcome email.',
+    message: "YOU'RE OFFICIALLY KXG. Check your inbox for our welcome email.",
     welcomeEmailSent: true,
   };
 }

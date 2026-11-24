@@ -11,6 +11,7 @@ import {
   toggleStock,
   deleteProduct,
 } from './actions';
+import { parseSizesToMap } from '@/lib/inventory';
 
 interface Subscriber {
   id: string;
@@ -44,30 +45,9 @@ const DEFAULT_SIZES: SizeStockItem[] = [
   { size: 'XL', stock: 5 },
 ];
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function normalizeSizes(rawSizes: unknown): SizeStockItem[] {
-  const base = ['S', 'M', 'L', 'XL'];
-  const map = new Map<string, number>();
-
-  if (Array.isArray(rawSizes)) {
-    for (const entry of rawSizes) {
-      if (isRecord(entry) && typeof entry.size === 'string') {
-        map.set(entry.size.toUpperCase(), Math.max(0, Number(entry.stock) || 0));
-      }
-    }
-  } else if (isRecord(rawSizes)) {
-    for (const [key, val] of Object.entries(rawSizes)) {
-      map.set(key.toUpperCase(), Math.max(0, Number(val) || 0));
-    }
-  }
-
-  return base.map((sz) => ({
-    size: sz,
-    stock: map.has(sz) ? map.get(sz)! : 0,
-  }));
+  const map = parseSizesToMap(rawSizes);
+  return Object.entries(map).map(([size, stock]) => ({ size, stock }));
 }
 
 // Small badges showing stock per size inside the inventory table

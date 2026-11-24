@@ -33,6 +33,12 @@ Order confirmation emails use the same verified Resend sender and are sent only 
 
 Keep all secret values in local environment configuration or your hosting provider's environment settings—never commit them. If a key or passcode is exposed, rotate it in its provider dashboard and replace the old value.
 
+## Product inventory
+
+Product size stock is normalized by `lib/inventory.ts`, which accepts the legacy size array and the current size-to-quantity JSON map. Checkout reserves the requested sizes for 10 minutes while customers pay through Paystack; a confirmed payment deducts the reserved stock exactly once. If a payment arrives after its reservation expires and that stock has since been taken, the app requests a refund and flags the case for support review.
+
+For a brand-new database, run `npx prisma migrate deploy`. For an existing database that already has the `Product` and `NewsletterSubscriber` tables but has no Prisma migration history, first confirm its schema matches `20261124090000_baseline/migration.sql`, then run `npx prisma migrate resolve --applied 20261124090000_baseline` followed by `npx prisma migrate deploy`. Do not mark the baseline applied on an empty database or a database with a different schema. Run these commands only after confirming `DATABASE_URL` targets the intended database. The checkout reservation migration must be applied to each environment before deploying this reservation flow.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

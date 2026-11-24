@@ -27,3 +27,19 @@ model NewsletterSubscriber {
   email     String   @unique
   createdAt DateTime @default(now())
 }
+
+model ProcessedPaystackPayment {
+  reference   String   @id
+  processedAt DateTime @default(now())
+}
+
+model PendingPaystackCheckout {
+  reference   String   @id
+  items       Json
+  amountKobo  Int
+  status      String   @default("PENDING")
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([status, expiresAt])
+}

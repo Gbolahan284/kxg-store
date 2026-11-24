@@ -2,50 +2,12 @@ import { db } from '@/lib/db';
 import Link from 'next/link';
 import AddToCartSection from '@/components/AddToCartSection';
 import ProductImageZoom from '@/components/ProductImageZoom';
+import { parseSizesToMap } from '@/lib/inventory';
 
 interface ProductPageProps {
   params: Promise<{
     id: string;
   }>;
-}
-
-interface SizeStockItem {
-  size: string;
-  stock: number;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function parseSizes(value: unknown): SizeStockItem[] {
-  let rawSizes = value;
-  if (typeof rawSizes === 'string') {
-    try {
-      rawSizes = JSON.parse(rawSizes);
-    } catch {
-      return [];
-    }
-  }
-
-  if (Array.isArray(rawSizes)) {
-    return rawSizes.flatMap((item): SizeStockItem[] => {
-      if (!isRecord(item) || typeof item.size !== 'string') return [];
-      return [{
-        size: item.size,
-        stock: Math.max(0, Number(item.stock) || 0),
-      }];
-    });
-  }
-
-  if (isRecord(rawSizes)) {
-    return Object.entries(rawSizes).map(([size, stock]) => ({
-      size,
-      stock: Math.max(0, Number(stock) || 0),
-    }));
-  }
-
-  return [];
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -78,7 +40,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     product.hoverImage || product.image,
   ].filter(Boolean) as string[];
 
-  const parsedSizes = parseSizes(product.sizes);
+  const parsedSizes = parseSizesToMap(product.sizes);
 
   return (
     <div className="min-h-screen bg-black text-white font-sans">
@@ -141,7 +103,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 name: product.name,
                 price: product.price,
                 image: product.image || undefined,
-                sizes: parsedSizes,
+                sizes: Object.entries(parsedSizes).map(([size, stock]) => ({ size, stock })),
+                inStock: product.inStock,
               }}
             />
 

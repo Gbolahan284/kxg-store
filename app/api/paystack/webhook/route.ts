@@ -57,5 +57,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Transaction was not verified as successful.' }, { status: 400 });
   }
 
+  if (result.status === 'refund-pending') {
+    return NextResponse.json({ received: true, refundPending: true });
+  }
+
   return NextResponse.json({ received: true });
 }

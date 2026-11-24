@@ -3,11 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-
-interface SizeStockItem {
-  size: string;
-  stock: number;
-}
+import { getSizeStock, parseSizesToMap } from '@/lib/inventory';
 
 interface AddToCartSectionProps {
   product: {
@@ -15,11 +11,12 @@ interface AddToCartSectionProps {
     name: string;
     price: number;
     image?: string;
-    sizes?: SizeStockItem[];
+    sizes?: unknown;
+    inStock?: boolean;
   };
 }
 
-const SIZES = ['M', 'L', 'XL', '2XL'];
+const SIZE_ORDER = ['S', 'M', 'L', 'XL', '2XL'];
 
 const SIZE_CHART = [
   { size: 'M', chest: '40 - 42"', length: '29"', shoulder: '18.5"' },
@@ -40,14 +37,18 @@ function trackPixel(eventName: string, params: PixelParams) {
 }
 
 export default function AddToCartSection({ product }: AddToCartSectionProps) {
+  const sizeStock = parseSizesToMap(product.sizes);
+  const sizes = [
+    ...SIZE_ORDER.filter((size) => size in sizeStock),
+    ...Object.keys(sizeStock).filter((size) => !SIZE_ORDER.includes(size)),
+  ];
+  const displaySizes = sizes.length > 0 ? sizes : SIZE_ORDER;
+
   const getSizeQty = (size: string): number => {
-    const inventory = product.sizes?.find(
-      (item) => item.size.toUpperCase() === size.toUpperCase()
-    );
-    return Math.max(0, Number(inventory?.stock) || 0);
+    return product.inStock === false ? 0 : getSizeStock(sizeStock, size);
   };
 
-  const firstAvailableSize = SIZES.find((size) => getSizeQty(size) > 0) ?? '';
+  const firstAvailableSize = displaySizes.find((size) => getSizeQty(size) > 0) ?? '';
 
   const [selectedSize, setSelectedSize] = useState<string>(firstAvailableSize);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -128,7 +129,7 @@ export default function AddToCartSection({ product }: AddToCartSectionProps) {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          {SIZES.map((size) => {
+          {displaySizes.map((size) => {
             const isOutOfStock = getSizeQty(size) <= 0;
             const isSelected = !isOutOfStock && activeSelectedSize === size;
 

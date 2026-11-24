@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { getTotalStock, parseSizesToMap } from '@/lib/inventory';
 
 // ---------------------------------------------------------------
 // AUTH HELPERS (not exported, so they are not callable from the browser)
@@ -40,33 +41,13 @@ async function checkAuth() {
 // SIZE HELPERS
 // ---------------------------------------------------------------
 
-type SizeItem = { size: string; stock: number };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 // Cleans the sizes sent from the admin form: valid names, whole numbers, never below 0
-function parseSizes(raw: string | null): SizeItem[] {
-  const parsed: unknown = raw ? JSON.parse(raw) : [];
-  if (!Array.isArray(parsed)) {
+function parseAdminSizes(raw: string | null) {
+  const sizes = parseSizesToMap(raw);
+  if (raw && Object.keys(sizes).length === 0) {
     throw new Error('Invalid size inventory data.');
   }
-
-  return parsed.flatMap((item): SizeItem[] => {
-    if (!isRecord(item) || typeof item.size !== 'string' || item.size.trim() === '') {
-      return [];
-    }
-
-    return [{
-      size: item.size.trim().toUpperCase(),
-      stock: Math.max(0, Math.floor(Number(item.stock) || 0)),
-    }];
-  });
-}
-
-function totalStockOf(sizes: SizeItem[]): number {
-  return sizes.reduce((sum, item) => sum + item.stock, 0);
+  return sizes;
 }
 
 // ---------------------------------------------------------------
@@ -111,8 +92,8 @@ export async function createProduct(formData: FormData) {
   const image = ((formData.get('image') as string) || '').trim();
   const hoverImage = ((formData.get('hoverImage') as string) || '').trim();
 
-  const sizes = parseSizes(formData.get('sizes') as string);
-  const totalStock = totalStockOf(sizes);
+  const sizes = parseAdminSizes(formData.get('sizes') as string);
+  const totalStock = getTotalStock(sizes);
 
   if (!name || !price) {
     throw new Error('Name and price are required.');
@@ -150,8 +131,8 @@ export async function updateProduct(productId: string, formData: FormData) {
   const image = ((formData.get('image') as string) || '').trim();
   const hoverImage = ((formData.get('hoverImage') as string) || '').trim();
 
-  const sizes = parseSizes(formData.get('sizes') as string);
-  const totalStock = totalStockOf(sizes);
+  const sizes = parseAdminSizes(formData.get('sizes') as string);
+  const totalStock = getTotalStock(sizes);
 
   if (!name || !price) {
     throw new Error('Name and price are required.');
@@ -191,18 +172,8 @@ export async function toggleStock(productId: string, currentStatus: boolean) {
   // Don't allow "Mark In Stock" when every size is at 0
   if (!currentStatus) {
     const product = await db.product.findUnique({ where: { id: productId } });
-    const raw = product?.sizes;
-    const sizes: SizeItem[] = Array.isArray(raw)
-      ? raw.flatMap((size): SizeItem[] => {
-          if (!isRecord(size)) return [];
-          return [{
-            size: String(size.size ?? ''),
-            stock: Math.max(0, Number(size.stock) || 0),
-          }];
-        })
-      : [];
-
-    if (totalStockOf(sizes) === 0) {
+    const sizes = parseSizesToMap(product?.sizes);
+    if (getTotalStock(sizes) === 0) {
       throw new Error('All sizes are at 0. Add stock to a size first.');
     }
   }

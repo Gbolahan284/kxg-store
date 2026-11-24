@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useCart } from '@/context/CartContext';
+import { CartItem, useCart } from '@/context/CartContext';
 
 // All 36 States in Nigeria + Federal Capital Territory (Abuja)
 const NIGERIAN_STATES = [
@@ -15,13 +15,13 @@ const NIGERIAN_STATES = [
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
-  const { cart = [], subtotal: globalSubtotal = 0 } = useCart() as any;
+  const { cart, subtotal: globalSubtotal } = useCart();
 
   // Check if this is a single "Buy It Now" checkout
   const isBuyNow = searchParams.get('buyNow') === 'true';
 
   // Construct items list based on checkout mode
-  const checkoutItems: any[] = isBuyNow
+  const checkoutItems: CartItem[] = isBuyNow
     ? [
         {
           id: searchParams.get('id') || 'buy-now-item',
@@ -36,7 +36,7 @@ function CheckoutContent() {
 
   // Calculate dynamic subtotal
   const subtotal = isBuyNow
-    ? checkoutItems.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0)
+    ? checkoutItems.reduce((acc, item) => acc + item.price * item.quantity, 0)
     : globalSubtotal;
 
   // Form State
@@ -93,7 +93,7 @@ function CheckoutContent() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim(),
-          amount: totalAmount * 100, // Paystack requires amount in Kobo
+          shippingMethod,
           items: checkoutItems, // Passes product names, prices & sizes (e.g. XL)
           metadata: {
             custom_fields: [
@@ -423,7 +423,7 @@ function CheckoutContent() {
       {/* Right Column - Cart Summary */}
       <div className="w-full md:w-5/12 bg-neutral-50 p-6 md:p-16 border-t md:border-t-0 md:border-l border-gray-200">
         <div className="max-w-md mx-auto space-y-6">
-          {checkoutItems.map((item: any, idx: number) => (
+          {checkoutItems.map((item, idx) => (
             <div key={`${item.id || idx}-${item.size || idx}`} className="flex items-center justify-between gap-4">
               <div className="relative flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-200 rounded-md border overflow-hidden relative flex-shrink-0">

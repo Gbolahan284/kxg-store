@@ -17,6 +17,8 @@ export async function GET(request: Request) {
   if (result.status === 'sent') {
     completeUrl.searchParams.set('payment', 'confirmed');
     completeUrl.searchParams.set('email', 'sent');
+  } else if (result.status === 'refund-pending') {
+    completeUrl.searchParams.set('payment', 'refund-pending');
   } else if (result.status === 'invalid') {
     completeUrl.searchParams.set('payment', 'unverified');
   } else {
