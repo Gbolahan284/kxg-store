@@ -23,8 +23,12 @@ const LOGO_URL = 'https://res.cloudinary.com/rl3bynob/image/upload/v1792639178/p
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.fitbykxg.com'),
-  title: 'KXG — ALWAYS STAY FLY, NEVER FOLLOW',
-  description: 'Official KXG Streetwear & Premium Legacy Jersey Collection.',
+  title: {
+    default: 'KXG — ALWAYS STAY FLY, NEVER FOLLOW | Official Store',
+    template: '%s | KXG',
+  },
+  description:
+    'Shop KXG (Fit by KXG) — Official KXG Streetwear & Premium Legacy Jersey Collection. Exclusive streetwear drops, hoodies, tees, and limited releases. Always stay fly, never follow.',
   keywords: [
     'KXG',
     'Fit by KXG',
@@ -40,6 +44,9 @@ export const metadata: Metadata = {
   verification: {
     google: 'x6HO0VUgG8ExP3ba25kNp-I6NifXlaUsfEl_B4T1bc0',
   },
+  alternates: {
+    canonical: 'https://www.fitbykxg.com',
+  },
   icons: {
     icon: [
       { url: LOGO_URL, type: 'image/jpeg' },
@@ -52,7 +59,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'KXG — ALWAYS STAY FLY, NEVER FOLLOW',
-    description: 'Official KXG Streetwear & Premium Legacy Jersey Collection.',
+    description:
+      'Official KXG online store. Shop exclusive streetwear drops and our Premium Legacy Jersey Collection.',
     url: 'https://www.fitbykxg.com',
     siteName: 'KXG',
     images: [
