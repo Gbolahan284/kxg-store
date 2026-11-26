@@ -4,6 +4,8 @@ import AddToCartSection from '@/components/AddToCartSection';
 import ProductImageZoom from '@/components/ProductImageZoom';
 import { parseSizesToMap } from '@/lib/inventory';
 
+export const dynamic = 'force-dynamic';
+
 interface ProductPageProps {
   params: Promise<{
     id: string;
@@ -15,20 +17,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   // Fetch product from DB
   const product = await db.product.findFirst({
-    where: id && id !== 'test-id' && id !== 'hoody' 
-      ? { OR: [{ id }, { name: id }, { category: id }] }
-      : {},
+    where:
+      id && id !== 'test-id' && id !== 'hoody'
+        ? { OR: [{ id }, { name: id }, { category: id }] }
+        : {},
   });
 
   if (!product) {
     return (
-      <main className="min-h-screen bg-black text-white p-12 max-w-4xl mx-auto">
-        <Link href="/" className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white mb-8 block">
+      <main className="min-h-screen bg-[#F5EED8] text-[#2C1509] p-12 max-w-4xl mx-auto">
+        <Link
+          href="/"
+          className="text-xs font-black uppercase tracking-wider text-[#2C1509]/75 hover:text-[#2C1509] mb-8 block"
+        >
           ← Back to Drops
         </Link>
-        <div className="border border-neutral-800 p-8 rounded-2xl bg-neutral-900/40 text-center">
-          <h2 className="text-xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-neutral-400 text-sm">No products exist in your database table yet.</p>
+        <div className="border border-[#2C1509]/20 p-8 rounded-2xl bg-[#EDE2C4] text-center">
+          <h2 className="text-xl font-black uppercase mb-2 text-[#2C1509]">Product Not Found</h2>
+          <p className="text-[#2C1509]/75 text-sm font-medium">
+            No products exist in your database table yet.
+          </p>
         </div>
       </main>
     );
@@ -43,18 +51,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const parsedSizes = parseSizesToMap(product.sizes);
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
+    <div className="min-h-screen bg-[#F5EED8] text-[#2C1509] font-sans">
       {/* Top Banner Announcement */}
-      <div className="w-full bg-neutral-900 text-neutral-300 border-b border-neutral-800 text-[11px] font-bold tracking-wider text-center py-2 uppercase">
+      <div className="w-full bg-[#EDE2C4] text-[#2C1509] border-b border-[#2C1509]/15 text-[11px] font-black tracking-wider text-center py-2 uppercase">
         PLEASE READ ALL POLICIES BEFORE PURCHASE
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
         {/* Navigation / Back link */}
         <div className="mb-6">
-          <Link 
-            href="/" 
-            className="inline-flex items-center text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white transition-colors"
+          <Link
+            href="/"
+            className="inline-flex items-center text-xs font-black uppercase tracking-wider text-[#2C1509]/80 hover:text-[#2C1509] transition-colors"
           >
             ← Back to Shop
           </Link>
@@ -66,7 +74,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {productImages.length > 0 ? (
               <ProductImageZoom images={productImages} productName={product.name} />
             ) : (
-              <div className="aspect-square bg-neutral-900 border border-neutral-800 rounded-lg flex items-center justify-center text-neutral-500 font-medium text-sm">
+              <div className="aspect-square bg-[#EDE2C4] border border-[#2C1509]/15 rounded-2xl flex items-center justify-center text-[#2C1509]/60 font-bold text-sm">
                 No Image Available
               </div>
             )}
@@ -75,29 +83,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {/* Right Side: Product Details & Actions */}
           <div className="lg:col-span-5 space-y-6 lg:pl-4">
             <div>
-              <h1 className="text-3xl font-black uppercase tracking-tight text-white">
+              <h1 className="text-3xl font-black uppercase tracking-tight text-[#2C1509]">
                 {product.name}
               </h1>
-              <p className="text-lg font-bold text-neutral-300 mt-2">
+              <p className="text-lg font-black text-[#2C1509] mt-2">
                 ₦{product.price.toLocaleString()}.00
               </p>
             </div>
 
-            {/* Size Guide Link */}
-            <div>
-              <button 
-                type="button" 
-                className="text-xs font-semibold text-neutral-400 hover:text-white hover:underline flex items-center gap-1 transition-colors"
-              >
-                SIZE GUIDE
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </button>
-            </div>
-
             {/* Interactive Add to Cart Component */}
-            <AddToCartSection 
+            <AddToCartSection
               product={{
                 id: product.id,
                 name: product.name,
@@ -110,11 +105,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Description */}
             {product.description && (
-              <div className="pt-4 border-t border-neutral-800">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">
+              <div className="pt-6 border-t border-[#2C1509]/25">
+                <h3 className="text-lg sm:text-xl font-black uppercase tracking-wider text-[#2C1509] mb-3 [text-shadow:0_0.5px_0_currentColor]">
                   Description
                 </h3>
-                <p className="text-neutral-400 text-sm leading-relaxed">
+                <p className="text-[#2C1509] font-extrabold text-base sm:text-lg leading-relaxed [text-shadow:0_0.3px_0_currentColor]">
                   {product.description}
                 </p>
               </div>

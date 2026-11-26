@@ -114,7 +114,6 @@ export async function createProduct(formData: FormData) {
   });
 
   revalidatePath('/');
-  revalidatePath('/admin');
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
@@ -155,7 +154,6 @@ export async function updateProduct(productId: string, formData: FormData) {
 
   revalidatePath('/');
   revalidatePath(`/product/${productId}`);
-  revalidatePath('/admin');
 }
 
 export async function getProducts() {
@@ -185,7 +183,6 @@ export async function toggleStock(productId: string, currentStatus: boolean) {
 
   revalidatePath('/');
   revalidatePath(`/product/${productId}`);
-  revalidatePath('/admin');
 }
 
 export async function deleteProduct(productId: string) {
@@ -196,7 +193,6 @@ export async function deleteProduct(productId: string) {
   });
 
   revalidatePath('/');
-  revalidatePath('/admin');
 }
 
 // ---------------------------------------------------------------

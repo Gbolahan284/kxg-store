@@ -27,20 +27,21 @@ export default function CartDrawer() {
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-[#2C1509]/45 backdrop-blur-sm transition-opacity"
         onClick={closeCart}
       />
 
       {/* Drawer */}
-      <div className="relative w-full max-w-md bg-neutral-950 border-l border-neutral-800 text-white h-full flex flex-col z-10 shadow-2xl">
+      <div className="relative w-full max-w-md bg-[#F5EED8] border-l border-[#2C1509]/15 text-[#2C1509] h-full flex flex-col z-10 shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b border-neutral-800 flex items-center justify-between">
-          <h2 className="text-lg font-black uppercase tracking-wider">
+        <div className="p-6 border-b border-[#2C1509]/15 flex items-center justify-between">
+          <h2 className="text-lg font-black uppercase tracking-wider text-[#2C1509]">
             Your Bag ({cart.reduce((acc: number, i: any) => acc + i.quantity, 0)})
           </h2>
           <button
             onClick={closeCart}
-            className="p-2 text-neutral-400 hover:text-white text-xl font-bold transition-colors"
+            className="p-2 text-[#2C1509]/70 hover:text-[#2C1509] text-xl font-bold transition-colors cursor-pointer"
+            aria-label="Close Cart"
           >
             ✕
           </button>
@@ -50,12 +51,12 @@ export default function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
-              <p className="text-neutral-500 text-sm font-bold uppercase tracking-widest mb-4">
+              <p className="text-[#2C1509]/70 text-sm font-bold uppercase tracking-widest mb-4">
                 Your cart is currently empty
               </p>
               <button
                 onClick={closeCart}
-                className="px-6 py-3 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors"
+                className="px-6 py-3 bg-[#2C1509] text-[#F5EED8] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#3E1F0E] transition-colors cursor-pointer"
               >
                 Continue Shopping
               </button>
@@ -64,9 +65,9 @@ export default function CartDrawer() {
             cart.map((item: any, idx: number) => (
               <div
                 key={`${item.id}-${item.size || idx}`}
-                className="flex gap-4 border-b border-neutral-900 pb-6"
+                className="flex gap-4 border-b border-[#2C1509]/15 pb-6"
               >
-                <div className="w-20 h-20 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="w-20 h-20 bg-[#EDE2C4] border border-[#2C1509]/15 rounded-xl overflow-hidden flex-shrink-0">
                   {item.image ? (
                     <img
                       src={item.image}
@@ -74,7 +75,7 @@ export default function CartDrawer() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-600">
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-[#2C1509]/60">
                       No Image
                     </div>
                   )}
@@ -82,37 +83,37 @@ export default function CartDrawer() {
 
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-sm uppercase">{item.name}</h3>
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="font-black text-sm uppercase text-[#2C1509]">{item.name}</h3>
                       <button
                         onClick={() => removeFromCart && removeFromCart(item.id, item.size)}
-                        className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+                        className="text-xs font-semibold text-[#2C1509]/70 hover:text-red-700 transition-colors cursor-pointer"
                       >
                         Remove
                       </button>
                     </div>
                     {item.size && (
-                      <p className="text-xs text-neutral-400 mt-1">
-                        Size: <span className="text-white font-bold">{item.size}</span>
+                      <p className="text-xs text-[#2C1509]/75 mt-1">
+                        Size: <span className="text-[#2C1509] font-black">{item.size}</span>
                       </p>
                     )}
                   </div>
 
                   <div className="flex justify-between items-center mt-3">
-                    <span className="text-sm font-bold">
+                    <span className="text-sm font-black text-[#2C1509]">
                       ₦{(item.price * item.quantity).toLocaleString()}
                     </span>
-                    <div className="flex items-center border border-neutral-800 rounded-lg">
+                    <div className="flex items-center bg-[#EDE2C4] border border-[#2C1509]/20 rounded-lg">
                       <button
                         onClick={() => updateQuantity && updateQuantity(item.id, item.size, -1)}
-                        className="px-2.5 py-1 text-xs text-neutral-400 hover:text-white"
+                        className="px-2.5 py-1 text-xs font-bold text-[#2C1509] hover:bg-[#2C1509]/10 transition-colors cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-2 text-xs font-bold">{item.quantity}</span>
+                      <span className="px-2 text-xs font-black text-[#2C1509]">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity && updateQuantity(item.id, item.size, 1)}
-                        className="px-2.5 py-1 text-xs text-neutral-400 hover:text-white"
+                        className="px-2.5 py-1 text-xs font-bold text-[#2C1509] hover:bg-[#2C1509]/10 transition-colors cursor-pointer"
                       >
                         +
                       </button>
@@ -126,19 +127,19 @@ export default function CartDrawer() {
 
         {/* Footer / Checkout */}
         {cart.length > 0 && (
-          <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 space-y-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-neutral-400 uppercase tracking-wider text-xs font-bold">
+          <div className="p-6 border-t border-[#2C1509]/15 bg-[#EDE2C4]/70 space-y-4">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-[#2C1509]/80 uppercase tracking-wider text-xs font-black">
                 Subtotal
               </span>
-              <span className="text-lg font-black">₦{subtotal.toLocaleString()}</span>
+              <span className="text-lg font-black text-[#2C1509]">₦{subtotal.toLocaleString()}</span>
             </div>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] font-medium text-[#2C1509]/75">
               Shipping and taxes calculated at checkout.
             </p>
             <button
               onClick={handleCheckout}
-              className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors cursor-pointer"
+              className="w-full py-4 bg-[#2C1509] text-[#F5EED8] font-black uppercase tracking-widest rounded-xl hover:bg-[#3E1F0E] transition-colors cursor-pointer"
             >
               Checkout
             </button>
