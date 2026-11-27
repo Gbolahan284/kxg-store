@@ -13,6 +13,7 @@ import CartDrawer from '@/components/CartDrawer';
 // Import Layout Components
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import KxgPreloader from '@/components/KxgPreloader';
 
 // Import 5-Second Timed Popup Modal
 import TimedPopupModal from '@/components/TimedPopupModal';
@@ -124,7 +125,8 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`${inter.className} bg-black text-white antialiased flex flex-col min-h-screen`}>
+      <body className={`${inter.className} bg-[#F5EED8] text-[#2C1509] antialiased flex flex-col min-h-screen`}>
+        <KxgPreloader />
         <noscript>
           <img
             height="1"
