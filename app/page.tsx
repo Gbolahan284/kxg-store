@@ -4,6 +4,12 @@ import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
+function formatPrice(amount: unknown) {
+  const numeric = Number(amount ?? 0);
+  if (Number.isNaN(numeric)) return '₦0';
+  return `₦${numeric.toLocaleString('en-NG')}`;
+}
+
 export default async function Home() {
   const products = await db.product.findMany({
     orderBy: {
@@ -62,10 +68,10 @@ export default async function Home() {
                     )}
                   </div>
 
-                  {/* Left-Aligned Heavy Bold Uppercase Title */}
-                  <div className="mt-3.5 text-left">
+                  {/* Product Name + Price Beside It */}
+                  <div className="mt-3.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-left">
                     <h3
-                      className={`text-sm sm:text-base md:text-lg font-black uppercase tracking-tight leading-snug transition-colors [text-shadow:0_0.5px_0_currentColor] ${
+                      className={`text-sm sm:text-base font-black uppercase tracking-tight leading-snug transition-colors [text-shadow:0_0.5px_0_currentColor] ${
                         product.inStock
                           ? 'text-[#2C1509] group-hover:text-[#2C1509]/70'
                           : 'text-[#2C1509]/50'
@@ -73,6 +79,13 @@ export default async function Home() {
                     >
                       {product.name}
                     </h3>
+                    <span
+                      className={`text-xs sm:text-sm font-extrabold tabular-nums ${
+                        product.inStock ? 'text-[#2C1509]/85' : 'text-[#2C1509]/45'
+                      }`}
+                    >
+                      {formatPrice(product.price)}
+                    </span>
                   </div>
                 </div>
               );

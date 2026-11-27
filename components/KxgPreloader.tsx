@@ -17,11 +17,11 @@ export default function KxgPreloader() {
 
     const t1 = setTimeout(() => {
       setStage("in");
-    }, 150);
+    }, 50);
 
     const t2 = setTimeout(() => {
       setStage("exit");
-    }, 5500);
+    }, 1450);
 
     const t3 = setTimeout(() => {
       try {
@@ -30,7 +30,7 @@ export default function KxgPreloader() {
         // Ignore storage restrictions
       }
       setStage("done");
-    }, 6500);
+    }, 2100);
 
     return () => {
       clearTimeout(t1);
@@ -57,9 +57,9 @@ export default function KxgPreloader() {
         display: "grid",
         placeItems: "center",
         clipPath: isExit ? "inset(0 0 100% 0)" : "inset(0 0 0% 0)",
-        transform: isExit ? "translate3d(0, -48px, 0)" : "translate3d(0, 0, 0)",
+        transform: isExit ? "translate3d(0, -36px, 0)" : "translate3d(0, 0, 0)",
         transition:
-          "clip-path 0.95s cubic-bezier(0.77, 0, 0.175, 1), transform 0.95s cubic-bezier(0.77, 0, 0.175, 1)",
+          "clip-path 0.65s cubic-bezier(0.77, 0, 0.175, 1), transform 0.65s cubic-bezier(0.77, 0, 0.175, 1)",
         pointerEvents: isExit ? "none" : "auto",
         willChange: "clip-path, transform",
       }}
@@ -75,9 +75,9 @@ export default function KxgPreloader() {
           padding: "0 24px",
           margin: "0 auto",
           textAlign: "center",
-          transform: isExit ? "translateY(-18px)" : "translateY(0)",
+          transform: isExit ? "translateY(-14px)" : "translateY(0)",
           opacity: isExit ? 0.35 : 1,
-          transition: "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease",
+          transition: "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease",
         }}
       >
         <div
@@ -85,7 +85,7 @@ export default function KxgPreloader() {
             overflow: "hidden",
             borderRadius: "18px",
             boxShadow: isIn ? "0 18px 40px rgba(44, 21, 9, 0.12)" : "none",
-            transition: "box-shadow 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s",
+            transition: "box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s",
           }}
         >
           <img
@@ -95,10 +95,10 @@ export default function KxgPreloader() {
               display: "block",
               width: "clamp(165px, 25vw, 235px)",
               height: "auto",
-              transform: isIn ? "translateY(0) scale(1)" : "translateY(28%) scale(1.06)",
+              transform: isIn ? "translateY(0) scale(1)" : "translateY(24%) scale(1.05)",
               opacity: isIn ? 1 : 0,
               transition:
-                "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.65s ease",
+                "transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease",
             }}
           />
         </div>
@@ -114,7 +114,7 @@ export default function KxgPreloader() {
             transform: isIn ? "scaleX(1)" : "scaleX(0)",
             opacity: isIn ? 1 : 0,
             transition:
-              "transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.25s, opacity 0.4s ease 0.25s",
+              "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s, opacity 0.3s ease 0.15s",
           }}
         />
 
@@ -131,7 +131,7 @@ export default function KxgPreloader() {
               transform: isIn ? "translateY(0)" : "translateY(110%)",
               opacity: isIn ? 1 : 0,
               transition:
-                "transform 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.35s, letter-spacing 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.35s, opacity 0.5s ease 0.35s",
+                "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s, letter-spacing 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.2s, opacity 0.35s ease 0.2s",
             }}
           >
             ALWAYS STAY FLY,NEVER FOLLOW.
